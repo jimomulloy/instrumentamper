@@ -20,6 +20,12 @@
           "bucketName": "jomu-instrument-store",
           "region": "eu-west-2"
         }
+      },
+      "hosting": {
+        "amplifyhosting": {
+          "appId": "d236f1ib4y6pxh",
+          "type": "cicd"
+        }
       }
     }
   }
