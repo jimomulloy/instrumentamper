@@ -1,0 +1,26 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-instrumentamper-dev-110753-authRole",
+      "UnauthRoleArn": "arn:aws:iam::942706091699:role/amplify-instrumentamper-dev-110753-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::942706091699:role/amplify-instrumentamper-dev-110753-authRole",
+      "Region": "eu-west-2",
+      "DeploymentBucketName": "amplify-instrumentamper-dev-110753-deployment",
+      "UnauthRoleName": "amplify-instrumentamper-dev-110753-unauthRole",
+      "StackName": "amplify-instrumentamper-dev-110753",
+      "StackId": "arn:aws:cloudformation:eu-west-2:942706091699:stack/amplify-instrumentamper-dev-110753/f639c190-c96a-11ed-8f7c-0af9653417d6",
+      "AmplifyAppId": "d236f1ib4y6pxh"
+    },
+    "categories": {
+      "auth": {
+        "instrumentampera289ff0f": {}
+      },
+      "storage": {
+        "instrumentamper4922eaac": {
+          "bucketName": "jomu-instrument-store",
+          "region": "eu-west-2"
+        }
+      }
+    }
+  }
+}
