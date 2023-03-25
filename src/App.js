@@ -1,65 +1,111 @@
 import { useState } from 'react'
 import { Auth, Storage } from 'aws-amplify';
-import { withAuthenticator, Button, Heading, View } from '@aws-amplify/ui-react';
+import { withAuthenticator, Button, Heading, View, SelectField, Card, Grid } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
+import AudioRecorder from "../src/AudioRecorder";
+import MidiPlayer from 'react-midi-player';
 
 function App({ signOut, user }) { 
   const [file, setFile] = useState();
+  const [paramStyle, setParamStyle] = useState('default');
   const [uploaded, setUploaded] = useState(false);
+  const [midiFile, setMidiFile] = useState(null);
+  
+  const getMidiFile = midiFile => {
+    if (midiFile.key.endsWith('.midi') || midiFile.key.endsWith('.mid')) {
+      Storage.get(midiFile.key, {
+        level: 'private'
+      }).then(result => {
+        console.log(result)
+        setMidiFile(result);
+      })
+    }  
+  }
 
   return (
+    <Grid
+      templateRows="1fr 3fr, 1fr, 1fr 1fr"
+      rowGap="1.5rem"
+      column-gap="10.0rem"
+      alignContent="centre"
+      justifyContent="centre"
+    >
     <View style={styles.container}>
-      <Heading level={1}>Hello {user.username}</Heading>
-      <Button onClick={signOut}>Sign out</Button>
-      <h2>Instrument Amp</h2>
-      <input type="file" onChange={(e) => setFile(e.target.files[0])} />
-      <button onClick={async () => {
-        console.log(file)
-        const storageResult = await Storage.put('input/' + file.name, file, {
-          level: 'private',
-          type: 'audio/wav'
-        })
-        // Insert predictions code here later
-        setUploaded(true);
-        console.log(storageResult);
-      }}>Upload and check if there's a midi created!</button>
-
       <View>
-        {uploaded
-          ? <div>Your Audio file is uploaded!</div>
-          : <div>Upload an Audio WAV file to get started</div>}
+        <Heading level={3}>Instrument Amp</Heading>
+        <p/>
       </View>
-      <button onClick={async () => {
-        const session = await Auth.currentSession()
-        console.log(session);
-        const result = await Storage.list('output/', {
-          level: 'private',
-          type: 'audio/midi'
-        })
-        console.log(result);
-        document.querySelector('.tracks').innerHTML = '';
-        result.results.forEach(item => createAudioPlayer(item))
-      }}>List MIDI files</button>
-      <div className="tracks"></div>
-    </View>
+      <View>
+        <Heading level={5}>Hello {user.username}</Heading>
+        <p/>
+        <Button onClick={signOut}>Sign out</Button>
+        <p/>
+      </View>  
+      <View>
+         <Card>
+          <Heading level={3}>Audio Input</Heading>
+          <p/>
+          <input type="file" onChange={(e) => setFile(e.target.files[0])} accept="audio/wav"/>
+          <div>
+              <AudioRecorder/>
+          </div>
+          <p/>
+          <SelectField
+            label="Parameter Style"
+            value={paramStyle}
+            onChange={(e) => setParamStyle(e.target.value)}
+          >
+            <option value="default">Default</option>
+            <option value="voice">Voice</option>
+            <option value="guitar">Guitar</option>
+            <option value="piano">Piano</option>
+            <option value="ensemble">Ensemble</option>
+          </SelectField>
+     
+        </Card>
+      </View>
+      <View>
+        <Card>              
+          <Button onClick={async () => {
+            console.log(file)
+            const storageResult = await Storage.put('input/' + file.name, file, {
+              metadata: { 'x-amz-meta-instrument-style': paramStyle},
+              level: 'private',
+              type: 'audio/wav'
+            })
+            setUploaded(true);
+            console.log(storageResult);
+          }}>Upload</Button>
+          {uploaded
+            ? <div>Your Audio file is uploaded!</div>
+            : <div>Upload an Audio WAV file to get started</div>}
+         </Card>  
+      </View>
+      <View>
+        <Card>
+          <Heading level={3}>Midi Output</Heading>
+          <p/>
+          <Button onClick={async () => {
+            const session = await Auth.currentSession()
+            console.log(session);
+            const result = await Storage.list('output/', {
+              level: 'private',
+              type: 'audio/midi'
+            })
+            console.log(result);
+            result.results.forEach(item => {
+              getMidiFile(item);
+            })
+          }}>Load MIDI file</Button>
+          <div>
+              <h3>Midi Player</h3>
+              <MidiPlayer src={midiFile} />
+          </div>
+        </Card>
+      </View>
+    </View>  
+    </Grid>
     );
-}
-
-const createAudioPlayer = track => {
-  if (track.key.endsWith('.midi')) {
-    Storage.get(track.key, {
-      level: 'private'
-    }).then(result => {
-      console.log(result)
-      const audio = document.createElement('audio')
-      const source = document.createElement('source')
-      audio.appendChild(source)
-      audio.setAttribute('controls', '')
-      source.setAttribute('src', result)
-      source.setAttribute('type', 'audio/midi')
-      document.querySelector('.tracks').appendChild(audio)
-    })
-  }  
 }
 
 const styles = {
