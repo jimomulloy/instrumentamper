@@ -2,15 +2,37 @@ import { useState } from 'react'
 import { Auth, Storage } from 'aws-amplify';
 import { withAuthenticator, Button, Heading, View, SelectField, Card, Grid } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
-import AudioRecorder from "../src/AudioRecorder";
 import MidiPlayer from 'react-midi-player';
+import AudioReactRecorder, { RecordState } from 'audio-react-recorder'
+import ReactAudioPlayer from 'react-audio-player';
 
 function App({ signOut, user }) { 
   const [file, setFile] = useState();
   const [paramStyle, setParamStyle] = useState('default');
   const [uploaded, setUploaded] = useState(false);
+  const [audioFileReady, setAudioFileReady] = useState(false);
   const [midiFile, setMidiFile] = useState(null);
-  
+  const [recordState, setRecordState] = useState(null);
+  const [recordData, setRecordData] = useState(null);
+  const [audioFile, setAudioFile] = useState(null);
+
+  const start = () => {
+    setAudioFileReady(false);
+    setRecordState(RecordState.START);
+  }
+ 
+  const stop = () => {
+    setRecordState(RecordState.STOP);
+  }
+
+  //audioData contains blob and blobUrl
+  const onStop = (audioData) => {
+    setRecordData(audioData);
+    setAudioFile(audioData.url);
+    setAudioFileReady(true);
+    console.log('audioData', audioData);
+  }
+
   const getMidiFile = midiFile => {
     if (midiFile.key.endsWith('.midi') || midiFile.key.endsWith('.mid')) {
       Storage.get(midiFile.key, {
@@ -45,10 +67,27 @@ function App({ signOut, user }) {
          <Card>
           <Heading level={3}>Audio Input</Heading>
           <p/>
-          <input type="file" onChange={(e) => setFile(e.target.files[0])} accept="audio/wav"/>
           <div>
-              <AudioRecorder/>
-          </div>
+            <input type="file" onChange={(e) => { setFile(e.target.files[0]); setAudioFile(e.target.files[0].name); setAudioFileReady(false);}} accept="audio/wav"/>
+          </div>  
+          <div>
+              <AudioReactRecorder state={recordState} onStop={onStop} canvasHeight="20.0rem"/>
+              <button onClick={start}>Start Recording </button>
+              <spacer type="horizontal" width="100" height="100"> - </spacer>
+              <button onClick={stop}>Stop Recording</button>
+            </div>
+          {audioFileReady
+            ? 
+            <div>
+               <ReactAudioPlayer
+                src={audioFile}
+                autoPlay
+                controls
+              />
+            </div>
+            : 
+            <div>
+            </div>}  
           <p/>
           <SelectField
             label="Parameter Style"
@@ -75,10 +114,21 @@ function App({ signOut, user }) {
             })
             setUploaded(true);
             console.log(storageResult);
-          }}>Upload</Button>
+          }}>Upload File</Button>
+          <spacer type="horizontal" width="100" height="100"> - </spacer>
+          <Button onClick={async () => {
+            console.log(recordData)
+            const storageResult = await Storage.put('input/' + 'recording.wav', recordData.blob, {
+              metadata: { 'x-amz-meta-instrument-style': paramStyle},
+              level: 'private',
+              type: 'audio/wav'
+            })
+            setUploaded(true);
+            console.log(storageResult);
+          }}>Upload Recording</Button>
           {uploaded
             ? <div>Your Audio file is uploaded!</div>
-            : <div>Upload an Audio WAV file to get started</div>}
+            : <div>Upload an Audio WAV file to get started</div>}  
          </Card>  
       </View>
       <View>

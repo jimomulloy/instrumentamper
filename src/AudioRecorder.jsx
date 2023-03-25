@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 const AudioRecorder = () => {
     const [permission, setPermission] = useState(false);
     const [stream, setStream] = useState(null);
-    const mimeType = "audio/webm";
+    const mimeType = "audio/wav";
     const mediaRecorder = useRef(null);
     const [recordingStatus, setRecordingStatus] = useState("inactive");
     const [audioChunks, setAudioChunks] = useState([]);
