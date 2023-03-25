@@ -81,7 +81,6 @@ function App({ signOut, user }) {
             <div>
                <ReactAudioPlayer
                 src={audioFile}
-                autoPlay
                 controls
               />
             </div>
