@@ -14,6 +14,7 @@ function App({ signOut, user }) {
   const [uploaded, setUploaded] = useState(false);
   const [midiTrackReady, setMidiTrackReady] = useState(false);
   const [audioFileReady, setAudioFileReady] = useState(false);
+  const [audioRecordingReady, setAudioRecordingReady] = useState(false);
   const [midiMasterFile, setMidiMasterFile] = useState(null);
   const [midiFile, setMidiFile] = useState(null);
   const [midiPlayOnLoad, setMidiPlayOnLoad] = useState(false);
@@ -21,9 +22,12 @@ function App({ signOut, user }) {
   const [recordState, setRecordState] = useState(null);
   const [recordData, setRecordData] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
+  const [audioRecording, setAudioRecording] = useState(null);
+  const [audioFileName, setAudioFileName] = useState(null);
+  const [uploadFile, setUploadFile] = useState(null);
 
   const start = () => {
-    setAudioFileReady(false);
+    setAudioRecordingReady(false);
     setRecordState(RecordState.START);
   }
  
@@ -31,20 +35,9 @@ function App({ signOut, user }) {
     setRecordState(RecordState.STOP);
   }
 
-  function MidiTrackSelector(props) {
-    return (
-      <Flex>  
-        <SelectField
-          label="Midi Tracks"
-          onChange={(e) => playMidiTrack(e.target.value)}
-          options={props.items.map(item => item.trackName)}
-        ></SelectField>  
-      </Flex>);
-  }
-
   const playOnLoad = () => {
     if (midiPlayOnLoad && midiMasterFile) {
-      var synth = new Tone.PolySynth().toDestination()
+      var synth = new Tone.PolySynth(Tone.Synth, 8).toDestination()
       
       MidiConvert.load(midiMasterFile, function(midi) {
         // make sure you set the tempo before you schedule the events
@@ -67,16 +60,13 @@ function App({ signOut, user }) {
   //audioData contains blob and blobUrl
   const onStop = (audioData) => {
     setRecordData(audioData);
-    setAudioFile(audioData.url);
-    setAudioFileReady(true);
-    console.log('audioData', audioData);
+    setAudioRecording(audioData.url);
+    setAudioRecordingReady(true);
   }
 
   const playMidiTrack = trackName => {
-    console.log(midiItems[0]);
     const item = midiItems.filter(item => item.trackName === trackName)[0];
     if (item !== null) {
-      console.log(item);
       setMidiFile(item.midiFile);
       setMidiTrackReady(true);
     }  
@@ -86,11 +76,13 @@ function App({ signOut, user }) {
       Storage.get(item.key, {
         level: 'private'
       }).then(result => {
-        console.log(result)
         setMidiFile(result);
         const trackName = item.key.split('/')[1].split('.')[0];
         if (!trackName.includes('track')) {
           setMidiMasterFile(result);
+          setMidiFile(result);
+          setMidiTrackReady(true);
+          playOnLoad();
         } 
         setMidiItems(midiItems => [...midiItems, {midiFile: result, key: item.key, muted: false, trackName: trackName}]);
       })
@@ -111,8 +103,8 @@ function App({ signOut, user }) {
       <Divider
           orientation="horizontal" />
       <Flex direction="column" gap="1rem" alignItems="center">  
-        <Heading level={4}>Audio Input</Heading>
-        <input type="file" onChange={(e) => { setFile(e.target.files[0]); setAudioFile(e.target.files[0].name); setAudioFileReady(false);}} accept="audio/wav"/>
+        <Heading level={4}>Audio WAV file Input</Heading>
+        <input type="file" onChange={(e) => { console.log(e); setFile(e.target.files[0]); setAudioFileName(e.target.files[0].name); setAudioFile(URL.createObjectURL(e.target.files[0])); setAudioFileReady(true);}} accept="audio/wav"/>
         <Flex direction="row" alignItems="center">
           <Button onClick={start}>Start Recording </Button>
           <Button onClick={stop}>Stop Recording</Button>
@@ -120,12 +112,23 @@ function App({ signOut, user }) {
         <AudioReactRecorder state={recordState} onStop={onStop} canvasHeight="20.0rem"/>
         {audioFileReady
           ? 
-          <div>
-            <ReactAudioPlayer
-              src={audioFile}
-              controls
-            />
-          </div>
+          <Flex direction="row" alignItems="center">
+             <Text>{audioFileName}: </Text>
+             <ReactAudioPlayer
+                src={audioFile}
+                controls
+              />
+          </Flex>
+          : ""}
+          {audioRecordingReady
+          ? 
+          <Flex direction="row" alignItems="center">
+             <Text>Recording: </Text>
+             <ReactAudioPlayer
+                src={audioRecording}
+                controls
+              />
+          </Flex>
           : ""}
       </Flex>    
       <Divider
@@ -133,36 +136,35 @@ function App({ signOut, user }) {
       <Flex direction="column" gap="1rem" alignItems="center" >
         <Heading level={4}>Upload</Heading>
         {uploaded
-          ? <div>Your Audio file is uploaded!</div>
-          : <div>Upload an Audio WAV file to get started</div>}  
+          ? <div>Your Audio file {uploadFile} is uploaded!</div>
+          : <div>Upload Audio file or recording to get started</div>}  
         <Flex direction="row" alignItems="center">
-          <Button onClick={async () => {
+          <Button isDisabled={!audioFileReady} onClick={async () => {
             setMidiItems([]);
             setMidiMasterFile(null);
             setMidiFile(null);
             setMidiTrackReady(false);
-            console.log(file)
             const storageResult = await Storage.put('input/' + file.name, file, {
-              metadata: { 'x-amz-meta-instrument-style': paramStyle},
+              metadata: { 'instrument-style': paramStyle},
               level: 'private',
               type: 'audio/wav'
             })
             setUploaded(true);
+            setUploadFile(file.name);
             console.log(storageResult);
           }}>Upload File</Button>
-          <Button onClick={async () => {
+          <Button isDisabled={!audioRecordingReady} onClick={async () => {
             setMidiItems([]);
             setMidiMasterFile(null);
             setMidiFile(null);
             setMidiTrackReady(false);
-            console.log(recordData)
             const storageResult = await Storage.put('input/' + 'recording.wav', recordData.blob, {
-              metadata: { 'x-amz-meta-instrument-style': paramStyle},
+              metadata: { 'instrument-style': paramStyle},
               level: 'private',
               type: 'audio/wav'
             })
             setUploaded(true);
-            console.log(storageResult);
+            setUploadFile('Recording');
           }}>Upload Recording</Button>
         </Flex>
       </Flex>
@@ -172,11 +174,11 @@ function App({ signOut, user }) {
           value={paramStyle}
           onChange={(e) => setParamStyle(e.target.value)}
         >
-          <option value="default">Default</option>
-          <option value="voice">Voice</option>
-          <option value="guitar">Guitar</option>
-          <option value="piano">Piano</option>
-          <option value="ensemble">Ensemble</option>
+          <option value="default">default</option>
+          <option value="voice">ensemble</option>
+          <option value="guitar">guitar</option>
+          <option value="piano">piano</option>
+          <option value="ensemble">voice</option>
         </SelectField>  
       </Flex>      
       <Divider
@@ -193,14 +195,9 @@ function App({ signOut, user }) {
               level: 'private',
               type: 'audio/midi'
             })
-            console.log(result);
-            console.log('result1');
             result.results.forEach(item => {
               loadMidiFile(item);
             })
-            
-            console.log('result2');
-            playOnLoad();
           }}>Load MIDI file</Button>
           <SwitchField
             label="Play OnLoad"
@@ -233,7 +230,7 @@ function App({ signOut, user }) {
       <Divider
         orientation="horizontal" />
       <Flex>
-        <Link color="#007EB9" href="https://signal.vercel.app/">
+        <Link color="#007EB9" href="https://signal.vercel.app/" target="_blank">
           <b>Signal</b> - a fantastic Online MIDI Editor
         </Link>
       </Flex>
