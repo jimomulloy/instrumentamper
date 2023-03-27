@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Auth, Storage } from 'aws-amplify';
+import { Storage } from 'aws-amplify';
 import { withAuthenticator, Button, Heading, Text, SelectField, Flex, Divider, Link, SwitchField} from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import MidiPlayer from 'react-midi-player';
@@ -44,7 +44,7 @@ function App({ signOut, user }) {
         Tone.Transport.bpm.value = midi.header.bpm
       
         // pass in the note events from one of the tracks as the second argument to Tone.Part 
-        var midiPart = new Tone.Part(function(time, note) {
+        new Tone.Part(function(time, note) {
       
           //use the events to play the synth
           synth.triggerAttackRelease(note.name, note.duration, time, note.velocity)
@@ -64,8 +64,8 @@ function App({ signOut, user }) {
     setAudioRecordingReady(true);
   }
 
-  const playMidiTrack = trackName => {
-    const item = midiItems.filter(item => item.trackName === trackName)[0];
+  const playMidiTrack = trackShortName => {
+    const item = midiItems.filter(item => item.trackShortName === trackShortName)[0];
     if (item !== null) {
       setMidiFile(item.midiFile);
       setMidiTrackReady(true);
@@ -78,13 +78,17 @@ function App({ signOut, user }) {
       }).then(result => {
         setMidiFile(result);
         const trackName = item.key.split('/')[1].split('.')[0];
+        let trackShortName = 'default';
         if (!trackName.includes('track')) {
           setMidiMasterFile(result);
           setMidiFile(result);
           setMidiTrackReady(true);
           playOnLoad();
-        } 
-        setMidiItems(midiItems => [...midiItems, {midiFile: result, key: item.key, muted: false, trackName: trackName}]);
+          trackShortName = 'master';
+        } else {
+          trackShortName = trackName.split('_')[2];
+        }
+        setMidiItems(midiItems => [...midiItems, {midiFile: result, key: item.key, muted: false, trackName: trackName, trackShortName: trackShortName}]);
       })
     }  
   }
@@ -158,7 +162,7 @@ function App({ signOut, user }) {
             setMidiMasterFile(null);
             setMidiFile(null);
             setMidiTrackReady(false);
-            const storageResult = await Storage.put('input/' + 'recording.wav', recordData.blob, {
+            await Storage.put('input/recording.wav', recordData.blob, {
               metadata: { 'instrument-style': paramStyle},
               level: 'private',
               type: 'audio/wav'
@@ -178,7 +182,7 @@ function App({ signOut, user }) {
           <option value="voice">ensemble</option>
           <option value="guitar">guitar</option>
           <option value="piano">piano</option>
-          <option value="ensemble">voice</option>
+          <option value="ensemble">vocal</option>
         </SelectField>  
       </Flex>      
       <Divider
@@ -212,7 +216,7 @@ function App({ signOut, user }) {
             <SelectField
               label="Midi Tracks"
               onChange={(e) => playMidiTrack(e.target.value)}
-              options={midiItems.map(item => item.trackName)}
+              options={midiItems.map(item => item.trackShortName)}
             ></SelectField>  
           </Flex>  
         : <Flex></Flex>
