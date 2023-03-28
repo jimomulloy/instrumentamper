@@ -1,5 +1,12 @@
 .App {
   text-align: center;
+  margin: 10px;
+  border: solid 1px #000;
+  border-bottom: 0;
+  min-height: 50px; /* min-height instead of height */
+  min-width: 0;
+  display: flex;
+  background-color: #E8EcF4;
 }
 
 .App-logo {
