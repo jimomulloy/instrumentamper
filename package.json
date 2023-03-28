@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@aws-amplify/ui-react": "^4.4.1",
+    "@cleandersonlobo/react-mic": "^1.2.0",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
@@ -12,6 +13,7 @@
     "freepats": "^1.0.3",
     "midiconvert": "^0.4.7",
     "react": "^18.2.0",
+    "react-audio-analyser": "0.2.5",
     "react-audio-player": "^0.17.0",
     "react-dom": "^18.2.0",
     "react-midi-player": "^1.0.6",

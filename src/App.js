@@ -37,6 +37,13 @@ function App({ signOut, user }) {
     setRecordState(RecordState.STOP);
   }
 
+  //audioData contains blob and blobUrl
+  const onStop = (audioData) => {
+    setRecordData(audioData);
+    setAudioRecording(audioData.url);
+    setAudioRecordingReady(true);
+  }
+
   const playOnLoad = () => {
     if (midiPlayOnLoad && midiMasterFile) {
       var synth = new Tone.PolySynth(Tone.Synth, 8).toDestination()
@@ -57,13 +64,6 @@ function App({ signOut, user }) {
         Tone.Transport.start()
       })
     }  
-  }
-
-  //audioData contains blob and blobUrl
-  const onStop = (audioData) => {
-    setRecordData(audioData);
-    setAudioRecording(audioData.url);
-    setAudioRecordingReady(true);
   }
 
   const playMidiTrack = trackShortName => {
@@ -96,8 +96,8 @@ function App({ signOut, user }) {
   }
   const handleClick = () => {
     inputRef.current.click();
-  };
-
+  }; 
+  
   return (
     <div className="App">
       <Flex direction="column" gap="1rem" alignItems="center">
@@ -133,7 +133,7 @@ function App({ signOut, user }) {
             <Button onClick={start}>Start Recording </Button>
             <Button onClick={stop}>Stop Recording</Button>
           </Flex>  
-          <AudioReactRecorder state={recordState} onStop={onStop} canvasHeight="20.0rem"/>
+          <AudioReactRecorder type="audio/wav" state={recordState} onStop={onStop} canvasHeight="20.0rem"/>
           {audioRecordingReady
             ? 
             <Flex direction="row" alignItems="center">
