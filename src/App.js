@@ -1,5 +1,5 @@
 import './App.css';
-import { useState, useRef } from 'react'
+import { useState, useRef } from 'react';
 import { Storage } from 'aws-amplify';
 import { withAuthenticator, Button, Heading, Text, SelectField, Flex, Divider, Link, SwitchField} from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
@@ -8,6 +8,10 @@ import * as MidiConvert from 'midiconvert';
 import * as Tone from 'tone'
 import AudioReactRecorder, { RecordState } from 'audio-react-recorder'
 import ReactAudioPlayer from 'react-audio-player';
+
+let gumStream = null;
+let recorder = null;
+let audioContext = null;
 
 function App({ signOut, user }) { 
   const [file, setFile] = useState();
@@ -41,6 +45,51 @@ function App({ signOut, user }) {
   const onStop = (audioData) => {
     setRecordData(audioData);
     setAudioRecording(audioData.url);
+    setAudioRecordingReady(true);
+  }
+
+  const startMSARecording = () => {
+    setAudioRecordingReady(false);
+    let constraints = {
+        audio: true,
+        video: false
+    }
+
+    let AudioContext = window.AudioContext || window.webkitAudioContext;
+    audioContext = new AudioContext;
+    console.log("sample rate: " + audioContext.sampleRate);
+
+    navigator.mediaDevices
+        .getUserMedia(constraints)
+        .then(function (stream) {
+            console.log("initializing Recorder.js ...");
+            gumStream = stream;
+            let input = audioContext.createMediaStreamSource(stream);
+            console.log("initializing A Recorder.js ...");
+            recorder = new window.Recorder(input, {
+                numChannels: 1
+            })
+            console.log("initializing B Recorder.js ...");
+            recorder.record();
+            console.log("Recording started");
+        }).catch(function (err) {
+            //enable the record button if getUserMedia() fails
+    });
+  }
+
+  const stopMSARecording = () => {
+    console.log("stopButton clicked");
+    recorder.stop(); //stop microphone access
+    gumStream.getAudioTracks()[0].stop();
+    recorder.exportWAV(onMSAStop);
+  }
+
+  const onMSAStop = (blob) => {
+    console.log("uploading...");
+    console.log(blob);
+    console.log(URL.createObjectURL(blob));
+    setRecordData({ blob: blob });
+    setAudioRecording(URL.createObjectURL(blob));
     setAudioRecordingReady(true);
   }
 
@@ -130,8 +179,8 @@ function App({ signOut, user }) {
             </Flex>
             : ""}
           <Flex direction="row" alignItems="center">
-            <Button onClick={start}>Start Recording </Button>
-            <Button onClick={stop}>Stop Recording</Button>
+            <Button onClick={startMSARecording}>Start Recording </Button>
+            <Button onClick={stopMSARecording}>Stop Recording</Button>
           </Flex>  
           <AudioReactRecorder type="audio/wav" state={recordState} onStop={onStop} canvasHeight="20.0rem"/>
           {audioRecordingReady
