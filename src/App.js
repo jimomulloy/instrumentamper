@@ -34,8 +34,8 @@ function App({ signOut, user }) {
   const inputParameterFileRef = useRef(null);
   const [hasInstrumentOffsetError, setHasInstrumentOffsetError] = useState(false);
   const [hasInstrumentRangeError, setHasInstrumentRangeError] = useState(false);
-  const [instrumentOffset, setInstrumentOffset] = useState(0);
-  const [instrumentRange, setInstrumentRange] = useState(60);
+  const [instrumentOffset, setInstrumentOffset] = useState("0");
+  const [instrumentRange, setInstrumentRange] = useState("60");
 
   const validateInstrumentOffset = (e) => {
     const containsDigit = /\d/.test(e.currentTarget.value);
@@ -228,7 +228,7 @@ function App({ signOut, user }) {
                 setMidiFile(null);
                 setMidiTrackReady(false);
                 const storageResult = await Storage.put('input/' + file.name, file, {
-                  metadata: { 'instrument-style': paramStyle},
+                  metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
                   level: 'private',
                   type: 'audio/wav'
                 })
@@ -245,7 +245,7 @@ function App({ signOut, user }) {
                 let fileKeyName = 'recording-' + uuidv4();
                 setUploadFileKeyName(fileKeyName);
                 await Storage.put('input/' + fileKeyName + '.wav', recordData.blob, {
-                  metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange},
+                  metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
                   level: 'private',
                   type: 'audio/wav'
                 })
