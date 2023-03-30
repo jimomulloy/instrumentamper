@@ -4,11 +4,9 @@ import { Storage } from 'aws-amplify';
 import { withAuthenticator, Button, Heading, Text, View, TextField, SelectField, Flex, Divider, Link, SwitchField} from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import MidiPlayer from 'react-midi-player';
-import * as MidiConvert from 'midiconvert';
-import * as Tone from 'tone'
-import AudioReactRecorder, { RecordState } from 'audio-react-recorder'
 import ReactAudioPlayer from 'react-audio-player';
 import { v4 as uuidv4 } from 'uuid';
+import 'html-midi-player';
 
 let gumStream = null;
 let recorder = null;
@@ -26,9 +24,7 @@ function App({ signOut, user }) {
   const [audioRecordingReady, setAudioRecordingReady] = useState(false);
   const [midiMasterFile, setMidiMasterFile] = useState(null);
   const [midiFile, setMidiFile] = useState(null);
-  const [midiPlayOnLoad, setMidiPlayOnLoad] = useState(false);
   const [midiItems, setMidiItems] = useState([]);
-  const [recordState, setRecordState] = useState(null);
   const [recordData, setRecordData] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
   const [audioRecording, setAudioRecording] = useState(null);
@@ -56,22 +52,6 @@ function App({ signOut, user }) {
       setInstrumentRange(e.currentTarget.value);
     }
   };
-
-  const start = () => {
-    setAudioRecordingReady(false);
-    setRecordState(RecordState.START);
-  }
- 
-  const stop = () => {
-    setRecordState(RecordState.STOP);
-  }
-
-  //audioData contains blob and blobUrl
-  const onStop = (audioData) => {
-    setRecordData(audioData);
-    setAudioRecording(audioData.url);
-    setAudioRecordingReady(true);
-  }
 
   const startMSARecording = () => {
     setAudioRecordingReady(false);
@@ -122,31 +102,10 @@ function App({ signOut, user }) {
     setAudioRecordingReady(true);
   }
 
-  const playOnLoad = () => {
-    if (midiPlayOnLoad) {
-      var synth = new Tone.PolySynth(Tone.Synth).toDestination()
-      
-      MidiConvert.load(midiMasterFile, function(midi) {
-        // make sure you set the tempo before you schedule the events
-        Tone.Transport.bpm.value = midi.header.bpm
-      
-        // pass in the note events from one of the tracks as the second argument to Tone.Part 
-        new Tone.Part(function(time, note) {
-      
-          //use the events to play the synth
-          synth.triggerAttackRelease(note.name, note.duration, time, note.velocity)
-      
-        }, midi.tracks[0].notes).start()
-      
-        // start the transport to hear the events
-        Tone.Transport.start()
-      })
-    }  
-  }
-
   const playMidiTrack = trackShortName => {
     const item = midiItems.filter(item => item.trackShortName === trackShortName)[0];
     if (item !== null) {
+      console.log('>>play trackShortName: ' + trackShortName);
       setMidiFile(item.midiFile);
       setMidiTrackReady(true);
     }  
@@ -167,15 +126,14 @@ function App({ signOut, user }) {
       Storage.get(item.key, {
         level: 'private'
       }).then(result => {
-        setMidiFile(result);
         const trackName = item.key.split('/')[1].split('.')[0];
         let trackShortName = 'default';
         if (!trackName.includes('track')) {
           setMidiMasterFile(result);
-          setMidiFile(result);
           setMidiTrackReady(true);
-          playOnLoad();
+          console.log('>>play master: ' + trackName);
           trackShortName = 'master';
+          setMidiFile(result);
         } else {
           trackShortName = trackName.split('_')[3];
         }
@@ -233,27 +191,26 @@ function App({ signOut, user }) {
             <Button onClick={handleClick}>Load File</Button>
             {audioFileReady
               ? 
-              <Flex direction="row" alignItems="center">
-                <Text>{audioFileName}: </Text>
+              <Flex direction="column" alignItems="center">
                 <ReactAudioPlayer
                     src={audioFile}
                     controls
                   />
+                <Text>{audioFileName}</Text>  
               </Flex>
               : ""}
             <Flex direction="row" alignItems="center">
               <Button onClick={startMSARecording} isLoading={isRecording} loadingText="Recording...">Start Recording </Button>
               <Button onClick={stopMSARecording} isDisabled={!isRecording}>Stop Recording</Button>
             </Flex>  
-            <AudioReactRecorder type="audio/wav" state={recordState} onStop={onStop} canvasHeight="20.0rem"/>
             {audioRecordingReady
               ? 
-              <Flex direction="row" alignItems="center">
-                <Text>Recording: </Text>
+              <Flex direction="column" alignItems="center">
                 <ReactAudioPlayer
                     src={audioRecording}
                     controls
                   />
+                <Text>Recorded File</Text>  
               </Flex>
               : ""}
           </Flex>    
@@ -354,13 +311,6 @@ function App({ signOut, user }) {
                   setMidiTrackPending(false);
                 }  
               }}>Load MIDI Tracks</Button>
-              <SwitchField
-                label="Play OnLoad"
-                isChecked={midiPlayOnLoad}
-                onChange={(e) => {
-                  setMidiPlayOnLoad(e.target.checked);
-                }}
-                />
             </Flex>    
             <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
               {midiTrackPending
@@ -368,7 +318,14 @@ function App({ signOut, user }) {
               : ""
               }    
               {midiItems.length > 0
-              ? <Flex>  
+              ? <Flex direction="column" gap="1rem" alignItems="center">  
+                  <Flex direction="column" gap="1rem" alignItems="center">
+                    <Text>Master MIDI file</Text>
+                    <midi-player
+                      src={midiMasterFile} visualizer="#myVisualizer">
+                    </midi-player>
+                    <midi-visualizer type="staff" id="myVisualizer"></midi-visualizer>
+                  </Flex>
                   <SelectField
                     label="Midi Tracks"
                     onChange={(e) => playMidiTrack(e.target.value)}
@@ -388,13 +345,6 @@ function App({ signOut, user }) {
                 : ""}
             </Flex>   
           </Flex>     
-          <Divider
-            orientation="horizontal" />
-          <Flex>
-            <Link color="#007EB9" href="https://signal.vercel.app/" target="_blank">
-              <b>Signal</b> - a fantastic Online MIDI Editor
-            </Link>
-          </Flex>
           <Divider
             orientation="horizontal" />
           <Flex>
