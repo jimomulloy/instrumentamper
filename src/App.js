@@ -1,7 +1,7 @@
 import './App.css';
 import { useState, useRef } from 'react';
 import { Storage } from 'aws-amplify';
-import { withAuthenticator, Button, Heading, Text, View, TextField, SelectField, Flex, Divider, Link, SwitchField} from '@aws-amplify/ui-react';
+import { withAuthenticator, Button, Heading, Text, View, TextField, SelectField, Flex, Divider, Link} from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import MidiPlayer from 'react-midi-player';
 import ReactAudioPlayer from 'react-audio-player';
@@ -36,6 +36,8 @@ function App({ signOut, user }) {
   const [hasInstrumentRangeError, setHasInstrumentRangeError] = useState(false);
   const [instrumentOffset, setInstrumentOffset] = useState("0");
   const [instrumentRange, setInstrumentRange] = useState("60");
+  const [installerUrl, setInstallerUrl] = useState(null);
+  const [state, setState] = useState({ status: 'READY' });
 
   const validateInstrumentOffset = (e) => {
     const containsDigit = /\d/.test(e.currentTarget.value);
@@ -158,7 +160,51 @@ function App({ signOut, user }) {
       })
     }  
   }
-  
+
+  const readState = async () => {
+    let result = {};
+    try {
+      console.log('>>state read');
+      result = await Storage.get('state.json', {
+        level: 'private',
+        download: true,
+        cacheControl: 'no-cache',
+        contentType: 'application/json' 
+      });
+    } catch(err) {
+      console.log('>>state err: ' + err);
+      const jsonResult = {status: 'READY'};
+      setState(jsonResult);
+      return jsonResult;
+    }   
+    console.log('>>state result : ' + result);
+    console.log(result);
+    try {
+      const url = URL.createObjectURL(result.Body)
+      const value = await result.Body.text();
+      console.log(value);
+      const jsonResult = JSON.parse(value);
+      setState(jsonResult);
+      return jsonResult;
+    } catch(err) {
+      console.log('>>state err: ' + err);
+      const jsonResult = {status: 'READY'};
+      setState(jsonResult);
+      return jsonResult;
+    }
+  }
+
+  // get the signed URL string
+  const loadInstallerURL = async () => {
+      const result = await Storage.get('InstrumentApp-0.0.1.exe', {
+        level: 'public'
+      })
+      console.log('>>installer : ' + result);
+      setInstallerUrl(result);
+  }
+
+  loadInstallerURL();
+
   return (
     <Flex direction={{ base: 'column', large: 'row' }}>
       <View 
@@ -219,38 +265,54 @@ function App({ signOut, user }) {
           <Flex direction="column" gap="1rem" alignItems="center" >
             <Heading level={4}>Upload</Heading>
             {uploaded
-              ? <div>Your Audio file {uploadFile} is uploaded!</div>
-              : <div>Upload Audio file or recording to get started</div>}  
+              ? <Text>{uploadFile} is uploaded!</Text>
+              : <Text>Upload Audio file or recording</Text>}  
             <Flex direction="row" alignItems="center">
+              {state.status !== 'READY' && audioFileReady
+                ? <Text>Busy, please try again in a few seconds</Text>
+                : ""} 
               <Button isDisabled={!audioFileReady} onClick={async () => {
                 setMidiItems([]);
                 setMidiMasterFile(null);
                 setMidiFile(null);
                 setMidiTrackReady(false);
-                const storageResult = await Storage.put('input/' + file.name, file, {
-                  metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
-                  level: 'private',
-                  type: 'audio/wav'
-                })
-                setUploaded(true);
-                setUploadFile(file.name);
-                setUploadFileKeyName(file.name.split('.')[0]);
-                console.log(storageResult);
+                const currentState = await readState();
+                console.log('>>state set: ' + currentState);
+                console.log(currentState.status);
+                if (currentState.status === 'READY') {
+                  const storageResult = await Storage.put('input/' + file.name, file, {
+                    metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
+                    level: 'private',
+                    type: 'audio/wav'
+                  })
+                  setUploaded(true);
+                  setUploadFile(file.name);
+                  setUploadFileKeyName(file.name.split('.')[0]);
+                  console.log(storageResult);
+                }  
               }}>Upload File</Button>
+              {state.status !== 'READY' && audioRecordingReady
+                ? <Text>Busy, please try again in a few seconds</Text>
+                : ""} 
               <Button isDisabled={!audioRecordingReady} onClick={async () => {
                 setMidiItems([]);
                 setMidiMasterFile(null);
                 setMidiFile(null);
                 setMidiTrackReady(false);
-                let fileKeyName = 'recording-' + uuidv4();
-                setUploadFileKeyName(fileKeyName);
-                await Storage.put('input/' + fileKeyName + '.wav', recordData.blob, {
-                  metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
-                  level: 'private',
-                  type: 'audio/wav'
-                })
-                setUploaded(true);
-                setUploadFile('Recording');
+                const currentState = await readState();
+                console.log('>>state set: ' + currentState);
+                console.log(currentState.status);
+                if (currentState.status === 'READY') {
+                  let fileKeyName = 'recording-' + uuidv4();
+                  setUploadFileKeyName(fileKeyName);
+                  await Storage.put('input/' + fileKeyName + '.wav', recordData.blob, {
+                    metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
+                    level: 'private',
+                    type: 'audio/wav'
+                  })
+                  setUploaded(true);
+                  setUploadFile('Recording');
+                }  
               }}>Upload Recording</Button>
             </Flex>
             <input type="file" 
@@ -291,6 +353,9 @@ function App({ signOut, user }) {
               orientation="horizontal" />
           <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
             <Heading level={4}>Midi Output</Heading>
+            {state.status !== 'READY' && uploaded
+              ? <Text>Busy, please try again in a few seconds</Text>
+              : ""}   
             <Flex>
               <Button isDisabled={!uploaded} onClick={async () => {
                 setMidiItems([]);
@@ -298,17 +363,22 @@ function App({ signOut, user }) {
                 setMidiFile(null);
                 setMidiTrackReady(false);
                 setMidiTrackPending(true);
-                const result = await Storage.list('output/', {
-                  level: 'private',
-                  type: 'audio/midi'
-                })
-                if (result.results.filter(item => 
-                  item.key.split('/')[1].startsWith(uploadFileKeyName)
-                    && (item.key.endsWith('.midi') || item.key.endsWith('.mid'))).length > 0) { 
-                  result.results.forEach(item => {
-                    loadMidiFile(item);
+                const currentState = await readState();
+                console.log('>>state set: ' + currentState);
+                console.log(currentState.status);
+                if (currentState.status === 'READY') {
+                  const result = await Storage.list('output/', {
+                    level: 'private',
+                    type: 'audio/midi'
                   })
-                  setMidiTrackPending(false);
+                  if (result.results.filter(item => 
+                    item.key.split('/')[1].startsWith(uploadFileKeyName)
+                      && (item.key.endsWith('.midi') || item.key.endsWith('.mid'))).length > 0) { 
+                    result.results.forEach(item => {
+                      loadMidiFile(item);
+                    })
+                    setMidiTrackPending(false);
+                  }  
                 }  
               }}>Load MIDI Tracks</Button>
             </Flex>    
@@ -319,6 +389,7 @@ function App({ signOut, user }) {
               }    
               {midiItems.length > 0
               ? <Flex direction="column" gap="1rem" alignItems="center">  
+                  {/* 
                   <Flex direction="column" gap="1rem" alignItems="center">
                     <Text>Master MIDI file</Text>
                     <midi-player
@@ -326,6 +397,7 @@ function App({ signOut, user }) {
                     </midi-player>
                     <midi-visualizer type="staff" id="myVisualizer"></midi-visualizer>
                   </Flex>
+                  */}
                   <SelectField
                     label="Midi Tracks"
                     onChange={(e) => playMidiTrack(e.target.value)}
@@ -346,6 +418,11 @@ function App({ signOut, user }) {
             </Flex>   
           </Flex>     
           <Divider
+            orientation="horizontal" />
+          <Flex>
+            <a href={installerUrl} target="_blank" rel='noreferrer'><b>Download Windows Desktop Installer</b></a>
+          </Flex>
+           <Divider
             orientation="horizontal" />
           <Flex>
             <Link color="#007EB9" href="mailto: jimomulloy@gmail.com">
