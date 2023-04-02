@@ -156,7 +156,7 @@ function App({ signOut, user }) {
       console.log(e); 
       await Storage.put('input/parameter.properties', e.target.files[0], {
         level: 'private',
-        type: 'text/plain'
+        contentType: 'text/plain'
       })
     }  
   }
@@ -192,6 +192,20 @@ function App({ signOut, user }) {
       setState(jsonResult);
       return jsonResult;
     }
+  }
+
+  const writeState = async (currentState) => {
+    try {
+      const stringState = JSON.stringify(currentState);
+      const storageResult = await Storage.put('state.json', stringState, {
+        level: 'private',
+        contentType: 'application/json' 
+      })
+      console.log(storageResult);
+    } catch(err) {
+      console.log('>>writeState err: ' + err);
+    }   
+    setState(currentState);
   }
 
   // get the signed URL string
@@ -267,10 +281,10 @@ function App({ signOut, user }) {
             {uploaded
               ? <Text>{uploadFile} is uploaded!</Text>
               : <Text>Upload Audio file or recording</Text>}  
-            <Flex direction="row" alignItems="center">
-              {state.status !== 'READY' && audioFileReady
+            {state.status !== 'READY' && (audioFileReady || audioRecordingReady)
                 ? <Text>Busy, please try again in a few seconds</Text>
-                : ""} 
+                : ""}   
+            <Flex direction="row" alignItems="center">
               <Button isDisabled={!audioFileReady} onClick={async () => {
                 setMidiItems([]);
                 setMidiMasterFile(null);
@@ -279,11 +293,15 @@ function App({ signOut, user }) {
                 const currentState = await readState();
                 console.log('>>state set: ' + currentState);
                 console.log(currentState.status);
-                if (currentState.status === 'READY') {
+                const timeNowMS = Date.now();
+                if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 20000) {
+                  currentState.status = 'BUSY';
+                  currentState.time = timeNowMS;
+                  await writeState(currentState);
                   const storageResult = await Storage.put('input/' + file.name, file, {
                     metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
                     level: 'private',
-                    type: 'audio/wav'
+                    contentType: 'audio/wav'
                   })
                   setUploaded(true);
                   setUploadFile(file.name);
@@ -291,9 +309,6 @@ function App({ signOut, user }) {
                   console.log(storageResult);
                 }  
               }}>Upload File</Button>
-              {state.status !== 'READY' && audioRecordingReady
-                ? <Text>Busy, please try again in a few seconds</Text>
-                : ""} 
               <Button isDisabled={!audioRecordingReady} onClick={async () => {
                 setMidiItems([]);
                 setMidiMasterFile(null);
@@ -302,13 +317,17 @@ function App({ signOut, user }) {
                 const currentState = await readState();
                 console.log('>>state set: ' + currentState);
                 console.log(currentState.status);
-                if (currentState.status === 'READY') {
+                const timeNowMS = Date.now();
+                if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 20000) {
+                  currentState.status = 'BUSY';
+                  currentState.time = timeNowMS;
+                  await writeState(currentState);
                   let fileKeyName = 'recording-' + uuidv4();
                   setUploadFileKeyName(fileKeyName);
                   await Storage.put('input/' + fileKeyName + '.wav', recordData.blob, {
                     metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
                     level: 'private',
-                    type: 'audio/wav'
+                    contentType: 'audio/wav'
                   })
                   setUploaded(true);
                   setUploadFile('Recording');
@@ -343,10 +362,10 @@ function App({ signOut, user }) {
                 onChange={(e) => setParamStyle(e.target.value)}
               >
                 <option value="default">default</option>
-                <option value="voice">ensemble</option>
+                <option value="vocal">vocal</option>
                 <option value="guitar">guitar</option>
                 <option value="piano">piano</option>
-                <option value="ensemble">vocal</option>
+                <option value="ensemble">ensemble</option>
               </SelectField>  
           </Flex>         
           <Divider
@@ -366,7 +385,8 @@ function App({ signOut, user }) {
                 const currentState = await readState();
                 console.log('>>state set: ' + currentState);
                 console.log(currentState.status);
-                if (currentState.status === 'READY') {
+                const timeNowMS = Date.now();
+                if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 20000) {
                   const result = await Storage.list('output/', {
                     level: 'private',
                     type: 'audio/midi'
@@ -389,15 +409,6 @@ function App({ signOut, user }) {
               }    
               {midiItems.length > 0
               ? <Flex direction="column" gap="1rem" alignItems="center">  
-                  {/* 
-                  <Flex direction="column" gap="1rem" alignItems="center">
-                    <Text>Master MIDI file</Text>
-                    <midi-player
-                      src={midiMasterFile} visualizer="#myVisualizer">
-                    </midi-player>
-                    <midi-visualizer type="staff" id="myVisualizer"></midi-visualizer>
-                  </Flex>
-                  */}
                   <SelectField
                     label="Midi Tracks"
                     onChange={(e) => playMidiTrack(e.target.value)}
@@ -415,6 +426,16 @@ function App({ signOut, user }) {
                   </Link>
                 </Flex>
                 : ""}
+              {midiItems.length > 0
+              ? <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
+                  <Text>Master MIDI file</Text>
+                  <midi-player
+                    src={midiMasterFile} 
+                    sound-font="https://storage.googleapis.com/magentadata/js/soundfonts/sgm_plus">
+                  </midi-player>
+                </Flex>  
+              : ""
+              }    
             </Flex>   
           </Flex>     
           <Divider
