@@ -137,7 +137,8 @@ function App({ signOut, user }) {
           trackShortName = 'master';
           setMidiFile(result);
         } else {
-          trackShortName = trackName.split('_')[3];
+          const trackNameParts = trackName.split('_');
+          trackShortName = trackNameParts[trackNameParts.length - 1];
         }
         setMidiItems(midiItems => [...midiItems, {midiFile: result, key: item.key, muted: false, trackName: trackName, trackShortName: trackShortName}]);
       })
