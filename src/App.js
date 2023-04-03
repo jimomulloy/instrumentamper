@@ -242,12 +242,12 @@ function App({ signOut, user }) {
           <Divider
               orientation="horizontal" />
           <Flex direction="column" gap="1rem" alignItems="center">  
-            <Heading level={4}>Audio WAV file Input</Heading>
+            <Heading level={4}>Audio file Input</Heading>
             <input type="file" 
               style={{ display: 'none' }}
               ref={inputRef}
               onChange={handleLoadAudioFile}
-              accept="audio/wav"/>
+              accept="audio/wav,audio/mp3,audio/ogg"/>
             <Button onClick={handleClick}>Load File</Button>
             {audioFileReady
               ? 
@@ -279,7 +279,7 @@ function App({ signOut, user }) {
           <Flex direction="column" gap="1rem" alignItems="center" >
             <Heading level={4}>Upload</Heading>
             {uploaded
-              ? <Text>{uploadFile} is uploaded!</Text>
+              ? <Text>Loaded {uploadFile}</Text>
               : <Text>Upload Audio file or recording</Text>}  
             {state.status !== 'READY' && (audioFileReady || audioRecordingReady)
                 ? <Text>Busy, please try again in a few seconds</Text>
@@ -300,8 +300,7 @@ function App({ signOut, user }) {
                   await writeState(currentState);
                   const storageResult = await Storage.put('input/' + file.name, file, {
                     metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
-                    level: 'private',
-                    contentType: 'audio/wav'
+                    level: 'private'
                   })
                   setUploaded(true);
                   setUploadFile(file.name);
@@ -326,8 +325,7 @@ function App({ signOut, user }) {
                   setUploadFileKeyName(fileKeyName);
                   await Storage.put('input/' + fileKeyName + '.wav', recordData.blob, {
                     metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
-                    level: 'private',
-                    contentType: 'audio/wav'
+                    level: 'private'
                   })
                   setUploaded(true);
                   setUploadFile('Recording');
@@ -371,7 +369,7 @@ function App({ signOut, user }) {
           <Divider
               orientation="horizontal" />
           <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
-            <Heading level={4}>Midi Output</Heading>
+            <Heading level={4}>Download Midi Output</Heading>
             {state.status !== 'READY' && uploaded
               ? <Text>Busy, please try again in a few seconds</Text>
               : ""}   
