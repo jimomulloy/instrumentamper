@@ -235,8 +235,8 @@ function App({ signOut, user }) {
   loadInstallerURL();
 
   return (
-    <Flex>
-      <Flex direction={{ base: 'column', large: 'row' }}>
+    <View>
+      <Flex wrap="nowrap" direction={{ base: 'column', large: 'row' }}>
         <View 
           maxWidth="100%"
           padding="1rem"
@@ -468,24 +468,22 @@ function App({ signOut, user }) {
               orientation="horizontal" />
           </Flex>
         </View>  
-      </Flex>  
-      {!isMobile
-        ? 
-          <Image
-            alt="Amplify logo"
-            src="./logo512.png"
-            objectFit="initial"
-            objectPosition="50% 50%"
-            backgroundColor="initial"
-            height="75%"
-            width="75%"
-            opacity="100%"
-            onClick={() => alert('📸 Say cheese!')}
-          />
-         
-        : ""
-      } 
-    </Flex>  
+        {!isMobile
+         ? 
+          <View maxWidth="80%" 
+            backgroundColor="var(--amplify-colors-white)"
+            borderRadius="6px"
+            border="1px solid var(--amplify-colors-black)"
+            boxShadow="3px 3px 5px 6px var(--amplify-colors-neutral-60)"
+            color="var(--amplify-colors-blue-60)">
+            <Image
+              alt="logo"
+              src="./logo512.png"
+            />
+          </View>
+         : ""}
+      </Flex> 
+    </View>  
     );
 }
 
