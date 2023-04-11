@@ -7,6 +7,7 @@ import MidiPlayer from 'react-midi-player';
 import ReactAudioPlayer from 'react-audio-player';
 import { v4 as uuidv4 } from 'uuid';
 import 'html-midi-player';
+import LoadingOverlay from 'react-loading-overlay';
 
 let gumStream = null;
 let recorder = null;
@@ -18,6 +19,7 @@ function App({ signOut, user }) {
   const [uploaded, setUploaded] = useState(false);
   const [uploadFileKeyName, setUploadFileKeyName] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [isStatusPolling, setIsStatusPolling] = useState(false);
   const [midiTrackReady, setMidiTrackReady] = useState(false);
   const [midiTrackPending, setMidiTrackPending] = useState(false);
   const [audioFileReady, setAudioFileReady] = useState(false);
@@ -223,6 +225,24 @@ function App({ signOut, user }) {
     setState(currentState);
   }
 
+  const pollState = async () => {
+    if (isStatusPolling) {
+      const currentState = await readState();
+      console.log('>>read current set: ' + currentState);
+      console.log(currentState.status);
+      const timeNowMS = Date.now();
+      if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 20000) {
+        setIsStatusPolling(false);
+      }  
+    }
+  }    
+  
+  useEffect(() => {
+    console.log('>>read useEffect');
+    let id = setTimeout(pollState, 2000);
+    return () => clearTimeout(id);
+  });
+
   // get the signed URL string
   const loadInstallerURL = async () => {
       const result = await Storage.get('InstrumentApp-0.0.1.exe', {
@@ -235,242 +255,249 @@ function App({ signOut, user }) {
   loadInstallerURL();
 
   return (
-    <View>
+    <View as="header" padding="10px">
       <Flex wrap="nowrap" direction={{ base: 'column', large: 'row' }}>
         <View 
-          maxWidth="100%"
+          maxWidth="400px"
           padding="1rem"
           width="100%" 
           border="1px solid var(--amplify-colors-black)" 
           boxShadow="3px 3px 5px 6px var(--amplify-colors-neutral-60)"
           backgroundColor="#E8EcF4"
-          color="var(--amplify-colors-blue-60)">         
-          <Flex direction="column" gap="1rem" alignItems="center">
-            <Divider
-                orientation="horizontal" />
-            <Heading level={3}>Instrument Amp</Heading>
-            <Divider
-                orientation="horizontal" />
-            <Flex direction="row" alignItems="center">
-              <Heading level={5}>Hello {user.username}</Heading>
-              <Button onClick={signOut}>Sign out</Button>
-            </Flex>
-            <Divider
-                orientation="horizontal" />
-            <Flex direction="column" gap="1rem" alignItems="center">  
-              <Heading level={4}>Audio file Input</Heading>
-              <input type="file" 
-                style={{ display: 'none' }}
-                ref={inputRef}
-                onChange={handleLoadAudioFile}
-                accept="audio/wav,audio/mp3,audio/ogg"/>
-              <Button onClick={handleClick}>Load File</Button>
-              {audioFileReady
-                ? 
-                <Flex direction="column" alignItems="center">
-                  <ReactAudioPlayer
-                      src={audioFile}
-                      controls
-                    />
-                  <Text>{audioFileName}</Text>  
-                </Flex>
-                : ""}
+          color="var(--amplify-colors-blue-60)">    
+          <LoadingOverlay
+            active={state.status !== 'READY'}
+            spinner
+            text='Processing audio ...'
+            >    
+            <Flex direction="column" gap="1rem" alignItems="center">
+              <Divider
+                  orientation="horizontal" />
+              <Heading level={3}>Instrument Amp</Heading>
+              <Divider
+                  orientation="horizontal" />
               <Flex direction="row" alignItems="center">
-                <Button onClick={startMSARecording} isLoading={isRecording} loadingText="Recording...">Start Recording </Button>
-                <Button onClick={stopMSARecording} isDisabled={!isRecording}>Stop Recording</Button>
-              </Flex>  
-              {audioRecordingReady
-                ? 
-                <Flex direction="column" alignItems="center">
-                  <ReactAudioPlayer
-                      src={audioRecording}
-                      controls
-                    />
-                  <Text>Recorded File</Text>  
-                </Flex>
-                : ""}
-            </Flex>    
-            <Divider
-                orientation="horizontal" />
-            <Flex direction="column" gap="1rem" alignItems="center" >
-              <Heading level={4}>Upload</Heading>
-              {uploaded
-                ? <Text>Loaded {uploadFile}</Text>
-                : <Text>Upload Audio file or recording</Text>}  
-              {state.status !== 'READY' && (audioFileReady || audioRecordingReady)
-                  ? <Text>Busy, please try again in a few seconds</Text>
-                  : ""}   
-              <Flex direction="row" alignItems="center">
-                <Button isDisabled={!audioFileReady} onClick={async () => {
-                  setMidiItems([]);
-                  setMidiMasterFile(null);
-                  setMidiFile(null);
-                  setMidiTrackReady(false);
-                  const currentState = await readState();
-                  console.log('>>state set: ' + currentState);
-                  console.log(currentState.status);
-                  const timeNowMS = Date.now();
-                  if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 20000) {
-                    currentState.status = 'BUSY';
-                    currentState.time = timeNowMS;
-                    await writeState(currentState);
-                    const storageResult = await Storage.put('input/' + file.name, file, {
-                      metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
-                      level: 'private'
-                    })
-                    setUploaded(true);
-                    setUploadFile(file.name);
-                    setUploadFileKeyName(file.name.split('.')[0]);
-                    console.log(storageResult);
-                  }  
-                }}>Upload File</Button>
-                <Button isDisabled={!audioRecordingReady} onClick={async () => {
-                  setMidiItems([]);
-                  setMidiMasterFile(null);
-                  setMidiFile(null);
-                  setMidiTrackReady(false);
-                  const currentState = await readState();
-                  console.log('>>state set: ' + currentState);
-                  console.log(currentState.status);
-                  const timeNowMS = Date.now();
-                  if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 20000) {
-                    currentState.status = 'BUSY';
-                    currentState.time = timeNowMS;
-                    await writeState(currentState);
-                    let fileKeyName = 'recording-' + uuidv4();
-                    setUploadFileKeyName(fileKeyName);
-                    await Storage.put('input/' + fileKeyName + '.wav', recordData.blob, {
-                      metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
-                      level: 'private'
-                    })
-                    setUploaded(true);
-                    setUploadFile('Recording');
-                  }  
-                }}>Upload Recording</Button>
+                <Heading level={5}>Hello {user.username}</Heading>
+                <Button onClick={signOut}>Sign out</Button>
               </Flex>
-              <input type="file" 
+              <Divider
+                  orientation="horizontal" />
+              <Flex direction="column" gap="1rem" alignItems="center">  
+                <Heading level={4}>Audio file Input</Heading>
+                <input type="file" 
                   style={{ display: 'none' }}
-                  ref={inputParameterFileRef}
-                  onChange={handleLoadParameterFile}
-                  accept=".properties"/>
-                  <Button onClick={handleParameterFileClick}>Load Parameter File</Button>
-              <TextField
-                  label="Offset"
-                  defaultValue="0"
-                  hasError={hasInstrumentOffsetError}
-                  errorMessage="0 - duration of audio secs"
-                  onChange={validateInstrumentOffset}
-                  size="small"
-              />
-              <TextField
-                label="Range"
-                defaultValue="60"
-                hasError={hasInstrumentRangeError}
-                errorMessage="0 - 60secs"
-                onChange={validateInstrumentRange}
-                size="small"
-              />
-                <SelectField
-                  label="Parameter Style"
-                  value={paramStyle}
-                  onChange={(e) => setParamStyle(e.target.value)}
-                >
-                  <option value="default">default</option>
-                  <option value="vocal">vocal</option>
-                  <option value="guitar">guitar</option>
-                  <option value="piano">piano</option>
-                  <option value="ensemble">ensemble</option>
-                </SelectField>  
-            </Flex>         
-            <Divider
-                orientation="horizontal" />
-            <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
-              <Heading level={4}>Download Midi Output</Heading>
-              {state.status !== 'READY' && uploaded
-                ? <Text>Busy, please try again in a few seconds</Text>
-                : ""}   
-              <Flex>
-                <Button isDisabled={!uploaded} onClick={async () => {
-                  setMidiItems([]);
-                  setMidiMasterFile(null);
-                  setMidiFile(null);
-                  setMidiTrackReady(false);
-                  setMidiTrackPending(true);
-                  const currentState = await readState();
-                  console.log('>>state set: ' + currentState);
-                  console.log(currentState.status);
-                  const timeNowMS = Date.now();
-                  if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 20000) {
-                    const result = await Storage.list('output/', {
-                      level: 'private',
-                      type: 'audio/midi'
-                    })
-                    if (result.results.filter(item => 
-                      item.key.split('/')[1].startsWith(uploadFileKeyName)
-                        && (item.key.endsWith('.midi') || item.key.endsWith('.mid'))).length > 0) { 
-                      result.results.forEach(item => {
-                        loadMidiFile(item);
-                      })
-                      setMidiTrackPending(false);
-                    }  
-                  }  
-                }}>Load MIDI Tracks</Button>
-              </Flex>    
-              <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
-                {midiTrackPending
-                ? <Text>Upload Pending ...</Text>
-                : ""
-                }    
-                {midiItems.length > 0
-                ? <Flex direction="column" gap="1rem" alignItems="center">  
-                    <SelectField
-                      label="Midi Tracks"
-                      onChange={(e) => playMidiTrack(e.target.value)}
-                      options={midiItems.map(item => item.trackShortName)}
-                    ></SelectField>  
-                  </Flex>  
-                : ""
-                }  
-                {midiTrackReady
+                  ref={inputRef}
+                  onChange={handleLoadAudioFile}
+                  accept="audio/wav,audio/mp3,audio/ogg"/>
+                <Button onClick={handleClick}>Load File</Button>
+                {audioFileReady
                   ? 
-                  <Flex direction="column" gap="1rem" alignItems="center">
-                    <MidiPlayer src={midiFile} />
-                    <Link color="#007EB9" href={midiFile}>
-                      Download
-                    </Link>
+                  <Flex direction="column" alignItems="center">
+                    <ReactAudioPlayer
+                        src={audioFile}
+                        controls
+                      />
+                    <Text>{audioFileName}</Text>  
                   </Flex>
                   : ""}
-                {midiItems.length > 0
-                ? <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
-                    <Text>Master MIDI file</Text>
-                    <midi-player
-                      src={midiMasterFile} 
-                      sound-font="https://storage.googleapis.com/magentadata/js/soundfonts/sgm_plus">
-                    </midi-player>
-                  </Flex>  
-                : ""
-                }    
-              </Flex>   
-            </Flex>     
-            <Divider
-              orientation="horizontal" />
-            <Flex>
-              <a href={installerUrl} target="_blank" rel='noreferrer'><b>Download Windows Desktop Installer</b></a>
+                <Flex direction="row" alignItems="center">
+                  <Button onClick={startMSARecording} isLoading={isRecording} loadingText="Recording...">Start Recording </Button>
+                  <Button onClick={stopMSARecording} isDisabled={!isRecording}>Stop Recording</Button>
+                </Flex>  
+                {audioRecordingReady
+                  ? 
+                  <Flex direction="column" alignItems="center">
+                    <ReactAudioPlayer
+                        src={audioRecording}
+                        controls
+                      />
+                    <Text>Recorded File</Text>  
+                  </Flex>
+                  : ""}
+              </Flex>    
+              <Divider
+                  orientation="horizontal" />
+              <Flex direction="column" gap="1rem" alignItems="center" >
+                <Heading level={4}>Upload</Heading>
+                {uploaded
+                  ? <Text>Loaded {uploadFile}</Text>
+                  : <Text>Upload Audio file or recording</Text>}  
+                {state.status !== 'READY' && (audioFileReady || audioRecordingReady)
+                    ? <Text>Busy, please try again in a few seconds</Text>
+                    : ""}   
+                <Flex direction="row" alignItems="center">
+                  <Button isDisabled={!audioFileReady} onClick={async () => {
+                    setMidiItems([]);
+                    setMidiMasterFile(null);
+                    setMidiFile(null);
+                    setMidiTrackReady(false);
+                    const currentState = await readState();
+                    console.log('>>state set: ' + currentState);
+                    console.log(currentState.status);
+                    const timeNowMS = Date.now();
+                    if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 20000) {
+                      currentState.status = 'BUSY';
+                      currentState.time = timeNowMS;
+                      await writeState(currentState);
+                      setIsStatusPolling(true);
+                      const storageResult = await Storage.put('input/' + file.name, file, {
+                        metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
+                        level: 'private'
+                      })
+                      setUploaded(true);
+                      setUploadFile(file.name);
+                      setUploadFileKeyName(file.name.split('.')[0]);
+                      console.log(storageResult);
+                    }  
+                  }}>Upload File</Button>
+                  <Button isDisabled={!audioRecordingReady} onClick={async () => {
+                    setMidiItems([]);
+                    setMidiMasterFile(null);
+                    setMidiFile(null);
+                    setMidiTrackReady(false);
+                    const currentState = await readState();
+                    console.log('>>state set: ' + currentState);
+                    console.log(currentState.status);
+                    const timeNowMS = Date.now();
+                    if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 20000) {
+                      currentState.status = 'BUSY';
+                      currentState.time = timeNowMS;
+                      await writeState(currentState);
+                      setIsStatusPolling(true);
+                      let fileKeyName = 'recording-' + uuidv4();
+                      setUploadFileKeyName(fileKeyName);
+                      await Storage.put('input/' + fileKeyName + '.wav', recordData.blob, {
+                        metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
+                        level: 'private'
+                      })
+                      setUploaded(true);
+                      setUploadFile('Recording');
+                    }  
+                  }}>Upload Recording</Button>
+                </Flex>
+                <input type="file" 
+                    style={{ display: 'none' }}
+                    ref={inputParameterFileRef}
+                    onChange={handleLoadParameterFile}
+                    accept=".properties"/>
+                    <Button onClick={handleParameterFileClick}>Load Parameter File</Button>
+                <TextField
+                    label="Offset"
+                    defaultValue="0"
+                    hasError={hasInstrumentOffsetError}
+                    errorMessage="0 - duration of audio secs"
+                    onChange={validateInstrumentOffset}
+                    size="small"
+                />
+                <TextField
+                  label="Range"
+                  defaultValue="60"
+                  hasError={hasInstrumentRangeError}
+                  errorMessage="0 - 60secs"
+                  onChange={validateInstrumentRange}
+                  size="small"
+                />
+                  <SelectField
+                    label="Parameter Style"
+                    value={paramStyle}
+                    onChange={(e) => setParamStyle(e.target.value)}
+                  >
+                    <option value="default">default</option>
+                    <option value="vocal">vocal</option>
+                    <option value="guitar">guitar</option>
+                    <option value="piano">piano</option>
+                    <option value="ensemble">ensemble</option>
+                  </SelectField>  
+              </Flex>         
+              <Divider
+                  orientation="horizontal" />
+              <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
+                <Heading level={4}>Download Midi Output</Heading>
+                {state.status !== 'READY' && uploaded
+                  ? <Text>Busy, please try again in a few seconds</Text>
+                  : ""}   
+                <Flex>
+                  <Button isDisabled={!uploaded} onClick={async () => {
+                    setMidiItems([]);
+                    setMidiMasterFile(null);
+                    setMidiFile(null);
+                    setMidiTrackReady(false);
+                    setMidiTrackPending(true);
+                    const currentState = await readState();
+                    console.log('>>state set: ' + currentState);
+                    console.log(currentState.status);
+                    const timeNowMS = Date.now();
+                    if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 20000) {
+                      const result = await Storage.list('output/', {
+                        level: 'private',
+                        type: 'audio/midi'
+                      })
+                      if (result.results.filter(item => 
+                        item.key.split('/')[1].startsWith(uploadFileKeyName)
+                          && (item.key.endsWith('.midi') || item.key.endsWith('.mid'))).length > 0) { 
+                        result.results.forEach(item => {
+                          loadMidiFile(item);
+                        })
+                        setMidiTrackPending(false);
+                      }  
+                    }  
+                  }}>Load MIDI Tracks</Button>
+                </Flex>    
+                <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
+                  {midiTrackPending
+                  ? <Text>Upload Pending ...</Text>
+                  : ""
+                  }    
+                  {midiItems.length > 0
+                  ? <Flex direction="column" gap="1rem" alignItems="center">  
+                      <SelectField
+                        label="Midi Tracks"
+                        onChange={(e) => playMidiTrack(e.target.value)}
+                        options={midiItems.map(item => item.trackShortName)}
+                      ></SelectField>  
+                    </Flex>  
+                  : ""
+                  }  
+                  {midiTrackReady
+                    ? 
+                    <Flex direction="column" gap="1rem" alignItems="center">
+                      <MidiPlayer src={midiFile} />
+                      <Link color="#007EB9" href={midiFile}>
+                        Download
+                      </Link>
+                    </Flex>
+                    : ""}
+                  {midiItems.length > 0
+                  ? <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
+                      <Text>Master MIDI file</Text>
+                      <midi-player
+                        src={midiMasterFile} 
+                        sound-font="https://storage.googleapis.com/magentadata/js/soundfonts/sgm_plus">
+                      </midi-player>
+                    </Flex>  
+                  : ""}    
+                </Flex>   
+              </Flex>     
+              <Divider
+                orientation="horizontal" />
+              <Flex>
+                <a href={installerUrl} target="_blank" rel='noreferrer'><b>Download Windows Desktop Installer</b></a>
+              </Flex>
+              <Divider
+                orientation="horizontal" />
+              <Flex>
+                <Link color="#007EB9" href="mailto: jimomulloy@gmail.com">
+                  <b>Contact</b> jimomulloy@gmail.com
+                </Link>
+              </Flex>
+              <Divider
+                orientation="horizontal" />
             </Flex>
-            <Divider
-              orientation="horizontal" />
-            <Flex>
-              <Link color="#007EB9" href="mailto: jimomulloy@gmail.com">
-                <b>Contact</b> jimomulloy@gmail.com
-              </Link>
-            </Flex>
-            <Divider
-              orientation="horizontal" />
-          </Flex>
+          </LoadingOverlay>   
         </View>  
         {!isMobile
          ? 
-          <View maxWidth="80%" 
+          <View 
             backgroundColor="var(--amplify-colors-white)"
             borderRadius="6px"
             border="1px solid var(--amplify-colors-black)"
@@ -478,7 +505,7 @@ function App({ signOut, user }) {
             color="var(--amplify-colors-blue-60)">
             <Image
               alt="logo"
-              src="./logo512.png"
+              src="./instrumentblocks.drawio.png"
             />
           </View>
          : ""}
