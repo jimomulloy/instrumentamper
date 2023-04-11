@@ -503,11 +503,23 @@ function App({ signOut, user }) {
             border="1px solid var(--amplify-colors-black)"
             boxShadow="3px 3px 5px 6px var(--amplify-colors-neutral-60)"
             color="var(--amplify-colors-blue-60)">
-            <Image
-              alt="logo"
-              src="./instrumentblocks.drawio.png"
-            />
-          </View>
+            <Flex direction="row" gap="1rem" alignItems="center" alignContent="center">
+              <Image
+                alt="design"
+                src="./instrumentblocks.drawio.png"
+              />
+              <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
+                <Image
+                  alt="tonemap1"
+                  src="./tm1.png"
+                /> 
+                <Image
+                  alt="tonemap2"
+                  src="./tm2.png"
+                />
+              </Flex>
+            </Flex>
+          </View>        
          : ""}
       </Flex> 
     </View>  
