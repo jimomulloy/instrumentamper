@@ -16,8 +16,6 @@ let audioContext = null;
  
 let isPolling = false; 
 
-console.log('!!INIT!!');
-
 function App({ signOut, user }) { 
   const [file, setFile] = useState();
   const [paramStyle, setParamStyle] = useState('default');
@@ -236,7 +234,7 @@ function App({ signOut, user }) {
       const currentState = await readState();
       console.log(currentState.status);
       const timeNowMS = Date.now();
-      if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 20000) {
+      if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 60000) {
         isPolling = false;
         setIsStatusPolling(false);
       }  
@@ -246,7 +244,7 @@ function App({ signOut, user }) {
   usePoll(async () => {
     await pollState();
   }, [], {
-    interval: 2000
+    interval: 3000
   });
 
   // get the signed URL string
@@ -341,7 +339,7 @@ function App({ signOut, user }) {
                     console.log('>>state set: ' + currentState);
                     console.log(currentState.status);
                     const timeNowMS = Date.now();
-                    if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 20000) {
+                    if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 60000) {
                       currentState.status = 'BUSY';
                       currentState.time = timeNowMS;
                       await writeState(currentState);
@@ -367,7 +365,7 @@ function App({ signOut, user }) {
                     console.log('>>state set: ' + currentState);
                     console.log(currentState.status);
                     const timeNowMS = Date.now();
-                    if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 20000) {
+                    if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 60000) {
                       currentState.status = 'BUSY';
                       currentState.time = timeNowMS;
                       await writeState(currentState);
@@ -436,7 +434,7 @@ function App({ signOut, user }) {
                     console.log('>>state set: ' + currentState);
                     console.log(currentState.status);
                     const timeNowMS = Date.now();
-                    if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 20000) {
+                    if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 60000) {
                       const result = await Storage.list('output/', {
                         level: 'private',
                         type: 'audio/midi'
