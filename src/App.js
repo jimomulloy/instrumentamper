@@ -1,17 +1,22 @@
 import './App.css';
 import { useEffect, useState, useRef } from 'react';
 import { Storage } from 'aws-amplify';
-import { withAuthenticator, Button, Heading, Image, Text, View, TextField, SelectField, Flex, Divider, Link} from '@aws-amplify/ui-react';
+import { withAuthenticator, Button, Heading, Image, Text, View, TextField, ScrollView, SelectField, Flex, Divider, Link} from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import MidiPlayer from 'react-midi-player';
 import ReactAudioPlayer from 'react-audio-player';
 import { v4 as uuidv4 } from 'uuid';
 import 'html-midi-player';
 import LoadingOverlay from 'react-loading-overlay';
+import usePoll from 'react-use-poll';
 
 let gumStream = null;
 let recorder = null;
 let audioContext = null;
+ 
+let isPolling = false; 
+
+console.log('!!INIT!!');
 
 function App({ signOut, user }) { 
   const [file, setFile] = useState();
@@ -218,6 +223,7 @@ function App({ signOut, user }) {
         level: 'private',
         contentType: 'application/json' 
       })
+      console.log('>>writeState');
       console.log(storageResult);
     } catch(err) {
       console.log('>>writeState err: ' + err);
@@ -226,21 +232,21 @@ function App({ signOut, user }) {
   }
 
   const pollState = async () => {
-    if (isStatusPolling) {
+    if (isPolling) {
       const currentState = await readState();
-      console.log('>>read current set: ' + currentState);
       console.log(currentState.status);
       const timeNowMS = Date.now();
       if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 20000) {
+        isPolling = false;
         setIsStatusPolling(false);
       }  
     }
   }    
-  
-  useEffect(() => {
-    console.log('>>read useEffect');
-    let id = setTimeout(pollState, 2000);
-    return () => clearTimeout(id);
+
+  usePoll(async () => {
+    await pollState();
+  }, [], {
+    interval: 2000
   });
 
   // get the signed URL string
@@ -266,7 +272,7 @@ function App({ signOut, user }) {
           backgroundColor="#E8EcF4"
           color="var(--amplify-colors-blue-60)">    
           <LoadingOverlay
-            active={state.status !== 'READY'}
+            active={isPolling}
             spinner
             text='Processing audio ...'
             >    
@@ -339,6 +345,8 @@ function App({ signOut, user }) {
                       currentState.status = 'BUSY';
                       currentState.time = timeNowMS;
                       await writeState(currentState);
+                      console.log('>>state written: ' + currentState);
+                      isPolling = true;
                       setIsStatusPolling(true);
                       const storageResult = await Storage.put('input/' + file.name, file, {
                         metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
@@ -363,6 +371,7 @@ function App({ signOut, user }) {
                       currentState.status = 'BUSY';
                       currentState.time = timeNowMS;
                       await writeState(currentState);
+                      isPolling = true;
                       setIsStatusPolling(true);
                       let fileKeyName = 'recording-' + uuidv4();
                       setUploadFileKeyName(fileKeyName);
@@ -472,8 +481,11 @@ function App({ signOut, user }) {
                       <Text>Master MIDI file</Text>
                       <midi-player
                         src={midiMasterFile} 
-                        sound-font="https://storage.googleapis.com/magentadata/js/soundfonts/sgm_plus">
+                        sound-font="https://storage.googleapis.com/magentadata/js/soundfonts/sgm_plus"
+                        visualizer="#myStaffVisualizer">
                       </midi-player>
+                      <midi-visualizer type="staff" id="myStaffVisualizer" src={midiMasterFile}>
+                      </midi-visualizer>
                     </Flex>  
                   : ""}    
                 </Flex>   
@@ -501,22 +513,30 @@ function App({ signOut, user }) {
             backgroundColor="var(--amplify-colors-white)"
             borderRadius="6px"
             border="1px solid var(--amplify-colors-black)"
+            padding="2rem"
             boxShadow="3px 3px 5px 6px var(--amplify-colors-neutral-60)"
             color="var(--amplify-colors-blue-60)">
-            <Flex direction="row" gap="1rem" alignItems="center" alignContent="center">
-              <Image
-                alt="design"
-                src="./instrumentblocks.drawio.png"
-              />
-              <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
+            <Flex direction="row" gap="2rem" alignItems="top" alignContent="center">
+              <Flex direction="column" gap="2rem" alignItems="top" alignContent="flex-start">
+                <Heading level={4}>Design</Heading>
+                <Image
+                  width="1800px"
+                  alt="design"
+                  src="./instrumentblocks.drawio.png"
+                />
+              </Flex>
+              <Flex direction="column" gap="2rem" alignItems="top" alignContent="flex-start">
+                <Heading level={4}>Screenshots</Heading>
                 <Image
                   alt="tonemap1"
                   src="./tm1.png"
                 /> 
+                <Heading level={5}>Example 1</Heading>
                 <Image
                   alt="tonemap2"
                   src="./tm2.png"
                 />
+                <Heading level={5}>Example 2</Heading>
               </Flex>
             </Flex>
           </View>        
