@@ -1,7 +1,7 @@
 import './App.css';
 import { useEffect, useState, useRef } from 'react';
 import { Storage } from 'aws-amplify';
-import { withAuthenticator, Button, Heading, Image, Text, View, TextField, ScrollView, SelectField, Flex, Divider, Link} from '@aws-amplify/ui-react';
+import { withAuthenticator, Button, Heading, Image, Text, TextAreaField, View, TextField, ScrollView, SelectField, Flex, Divider, Link} from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import MidiPlayer from 'react-midi-player';
 import ReactAudioPlayer from 'react-audio-player';
@@ -45,7 +45,15 @@ function App({ signOut, user }) {
   const [state, setState] = useState({ status: 'READY' });
   const [width, setWidth] = useState(window.innerWidth);
   const [isMobile, setIsMobile] = useState(false);
- 
+  const [hasChatReply, setHasChatReply] = useState(false);
+  //const [chatReply, setChatReply] = useState(`Please enter a comment or question above and I may return with a reply in this field. 
+  //Only one comment can be dalt with at a time and a new submission will overwrite the last one. 
+  //All comments may be made public but will remain anonymous`);
+  const [chatReply, setChatReply] = useState(null);
+  const [hasChatQuestion, setHasChatQuestion] = useState(false);
+  const [chatQuestion, setChatQuestion] = useState("");
+  const [isChatReplyPending, setIsChatReplyPending] = useState(false);
+  
   function handleWindowSizeChange() {
     setWidth(window.innerWidth);
     setIsMobile(window.innerWidth <= 768)
@@ -58,6 +66,12 @@ function App({ signOut, user }) {
       }
   }, []);
   
+  useEffect(() => {
+    console.log('Initial LOAD')    
+    loadAudioFile();
+    loadChat();
+  }, []);
+
   const validateInstrumentOffset = (e) => {
     const containsDigit = /\d/.test(e.currentTarget.value);
     setHasInstrumentOffsetError(!containsDigit);
@@ -142,6 +156,24 @@ function App({ signOut, user }) {
     }  
   }
 
+  const handleChatQuestion = (e) => {
+    setChatQuestion(e.currentTarget.value);
+    setHasChatQuestion(true);
+  }
+
+  const submitChatQuestion = async (e) => {
+    if (chatQuestion.length > 0) {
+      console.log(chatQuestion); 
+      const blob = new Blob([chatQuestion], { type: "text/plain" });
+      const text = await blob.text();
+      await Storage.put('chat/question.txt', text, {
+        level: 'protected',
+        contentType: 'text/plain'
+      })
+      setIsChatReplyPending(true);
+    }  
+  }
+
   const loadMidiFile = item => {
     if (item.key.endsWith('.midi') || item.key.endsWith('.mid')) {
       Storage.get(item.key, {
@@ -163,6 +195,109 @@ function App({ signOut, user }) {
       })
     }  
   }
+
+  const loadMidiTracks = async (fileKeyName) => {
+    console.log('>>midi reloading ...' + fileKeyName + ', ' + audioFileName);
+    if (!fileKeyName) {
+      fileKeyName = audioFileName.split('.')[0];
+    }
+    setMidiItems([]);
+    setMidiMasterFile(null);
+    setMidiFile(null);
+    setMidiTrackReady(false);
+    setMidiTrackPending(true);
+    const currentState = await readState();
+    console.log('>>state set: ' + currentState);
+    console.log(currentState.status);
+    const result = await Storage.list('output/', {
+      level: 'private',
+      type: 'audio/midi'
+    })
+    if (result.results.filter(item => 
+      item.key.split('/')[1].startsWith(fileKeyName)
+        && (item.key.endsWith('.midi') || item.key.endsWith('.mid'))).length > 0) { 
+      result.results.forEach(item => {
+        loadMidiFile(item);
+      })
+      console.log('>>midi loaded')
+      setMidiTrackPending(false);
+    }  
+  }
+  
+  const loadChat = async () => {
+    let result = {};
+    try {
+      result = await Storage.get('chat/question.txt', {
+        level: 'protected',
+        download: true,
+        cacheControl: 'no-cache',
+        contentType: 'text/plain'
+      });
+    } catch(err) {
+      console.log('>>chat question result error : ' + result);
+      console.log('>>chat question error : ' + err);
+    }   
+    console.log('>>chat question : ' + result);
+    console.log(result);
+    try {
+      const value = await result.Body.text();
+      console.log('>>chat question value: ' + value);
+      setChatQuestion(value);
+    } catch(err) {
+      console.log('>>chat question value error : ' + result);
+      console.log('>>chat question error : ' + err);
+    }   
+    result = {};
+    try {
+      result = await Storage.get('chat/reply.txt', {
+        level: 'protected',
+        download: true,
+        cacheControl: 'no-cache',
+        contentType: 'text/plain'
+      });
+    } catch(err) {
+      console.log('>>chat reply result error : ' + result);
+      console.log('>>chat reply error : ' + err);
+    }   
+    console.log('>>chat reply : ' + result);
+    console.log(result);
+    try {
+      const value = await result.Body.text();
+      console.log('>>chat reply value: ' + value);
+      setChatReply(value);
+    } catch(err) {
+      console.log('>>chat reply result error : ' + result);
+      console.log('>>chat reply error : ' + err);
+    }   
+  }
+
+  const loadAudioFile = async () => {
+    const result = await Storage.list('input/', {
+      level: 'private',
+      type: 'audio/*'
+    })
+    if (result.results.filter(item => (item.key.endsWith('.wav') || item.key.endsWith('.WAV'))).length > 0) { 
+      result.results.forEach(async item => {  
+        console.log('>>Audio file: ' + item.key);
+        const result = await Storage.get(item.key, {
+          level: 'private',
+          download: true,
+          cacheControl: 'no-cache',
+        });
+        console.log(result);
+        const name = item.key.split('/')[1];
+        setFile(result.Body); 
+        setAudioFileName(name); 
+        setAudioFile(URL.createObjectURL(result.Body)); 
+        setAudioFileReady(true);
+        setUploaded(true);
+        setUploadFile(name);
+        setUploadFileKeyName(name.split('.')[0]);
+        await loadMidiTracks(name.split('.')[0]);
+      });
+    }  
+  }
+
   const handleClick = () => {
     inputRef.current.click();
   }; 
@@ -232,7 +367,7 @@ function App({ signOut, user }) {
   const pollState = async () => {
     if (isPolling) {
       const currentState = await readState();
-      console.log(currentState.status);
+      console.log('>>Polling currentState.status: ' + currentState.status);
       const timeNowMS = Date.now();
       if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 60000) {
         isPolling = false;
@@ -343,16 +478,16 @@ function App({ signOut, user }) {
                       currentState.status = 'BUSY';
                       currentState.time = timeNowMS;
                       await writeState(currentState);
-                      console.log('>>state written: ' + currentState);
+                      console.log('>>state written: ' + currentState.status + ', ' + audioFileName);
                       isPolling = true;
                       setIsStatusPolling(true);
-                      const storageResult = await Storage.put('input/' + file.name, file, {
+                      const storageResult = await Storage.put('input/' + audioFileName, file, {
                         metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
                         level: 'private'
                       })
                       setUploaded(true);
-                      setUploadFile(file.name);
-                      setUploadFileKeyName(file.name.split('.')[0]);
+                      setUploadFile(audioFileName);
+                      setUploadFileKeyName(audioFileName.split('.')[0]);
                       console.log(storageResult);
                     }  
                   }}>Upload File</Button>
@@ -424,31 +559,7 @@ function App({ signOut, user }) {
                   ? <Text>Busy, please try again in a few seconds</Text>
                   : ""}   
                 <Flex>
-                  <Button isDisabled={!uploaded} onClick={async () => {
-                    setMidiItems([]);
-                    setMidiMasterFile(null);
-                    setMidiFile(null);
-                    setMidiTrackReady(false);
-                    setMidiTrackPending(true);
-                    const currentState = await readState();
-                    console.log('>>state set: ' + currentState);
-                    console.log(currentState.status);
-                    const timeNowMS = Date.now();
-                    if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 60000) {
-                      const result = await Storage.list('output/', {
-                        level: 'private',
-                        type: 'audio/midi'
-                      })
-                      if (result.results.filter(item => 
-                        item.key.split('/')[1].startsWith(uploadFileKeyName)
-                          && (item.key.endsWith('.midi') || item.key.endsWith('.mid'))).length > 0) { 
-                        result.results.forEach(item => {
-                          loadMidiFile(item);
-                        })
-                        setMidiTrackPending(false);
-                      }  
-                    }  
-                  }}>Load MIDI Tracks</Button>
+                  <Button isDisabled={!uploaded} onClick={() => loadMidiTracks(uploadFileKeyName)}>Load MIDI Tracks</Button>
                 </Flex>    
                 <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
                   {midiTrackPending
@@ -478,12 +589,8 @@ function App({ signOut, user }) {
                   ? <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
                       <Text>Master MIDI file</Text>
                       <midi-player
-                        src={midiMasterFile} 
-                        sound-font="https://storage.googleapis.com/magentadata/js/soundfonts/sgm_plus"
-                        visualizer="#myStaffVisualizer">
+                        src={midiMasterFile}>
                       </midi-player>
-                      <midi-visualizer type="staff" id="myStaffVisualizer" src={midiMasterFile}>
-                      </midi-visualizer>
                     </Flex>  
                   : ""}    
                 </Flex>   
@@ -502,6 +609,29 @@ function App({ signOut, user }) {
               </Flex>
               <Divider
                 orientation="horizontal" />
+              <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">  
+                <Heading level={5}>Chat</Heading>
+                <TextAreaField
+                  autoComplete="off"
+                  descriptiveText="Please enter a comment or question"
+                  direction="column"
+                  name="chat_question"
+                  defaultValue={chatQuestion}
+                  rows="3"
+                  wrap="nowrap"
+                  onChange={handleChatQuestion}
+                />
+                <Button
+                  isDisabled={!hasChatQuestion}
+                  onClick={submitChatQuestion}
+                >
+                  Submit
+                </Button>
+                <TextAreaField
+                  isReadOnly="true"
+                  label="Reply" defaultValue={chatReply} 
+                />
+              </Flex>
             </Flex>
           </LoadingOverlay>   
         </View>  
