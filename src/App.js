@@ -46,9 +46,6 @@ function App({ signOut, user }) {
   const [width, setWidth] = useState(window.innerWidth);
   const [isMobile, setIsMobile] = useState(false);
   const [hasChatReply, setHasChatReply] = useState(false);
-  //const [chatReply, setChatReply] = useState(`Please enter a comment or question above and I may return with a reply in this field. 
-  //Only one comment can be dalt with at a time and a new submission will overwrite the last one. 
-  //All comments may be made public but will remain anonymous`);
   const [chatReply, setChatReply] = useState(null);
   const [hasChatQuestion, setHasChatQuestion] = useState(false);
   const [chatQuestion, setChatQuestion] = useState("");
@@ -276,24 +273,28 @@ function App({ signOut, user }) {
       level: 'private',
       type: 'audio/*'
     })
-    if (result.results.filter(item => (item.key.endsWith('.wav') || item.key.endsWith('.WAV'))).length > 0) { 
+    if (result.results
+        .filter(item => (!item.key.startsWith('input/recording/') 
+          && (item.key.endsWith('.wav') || item.key.endsWith('.WAV')))).length > 0) { 
       result.results.forEach(async item => {  
-        console.log('>>Audio file: ' + item.key);
-        const result = await Storage.get(item.key, {
-          level: 'private',
-          download: true,
-          cacheControl: 'no-cache',
-        });
-        console.log(result);
-        const name = item.key.split('/')[1];
-        setFile(result.Body); 
-        setAudioFileName(name); 
-        setAudioFile(URL.createObjectURL(result.Body)); 
-        setAudioFileReady(true);
-        setUploaded(true);
-        setUploadFile(name);
-        setUploadFileKeyName(name.split('.')[0]);
-        await loadMidiTracks(name.split('.')[0]);
+        if (!item.key.startsWith('input/recording/')) {
+          console.log('>>Audio file: ' + item.key);
+          const result = await Storage.get(item.key, {
+            level: 'private',
+            download: true,
+            cacheControl: 'no-cache',
+          });
+          console.log(result);
+          const name = item.key.split('/')[1];
+          setFile(result.Body); 
+          setAudioFileName(name); 
+          setAudioFile(URL.createObjectURL(result.Body)); 
+          setAudioFileReady(true);
+          setUploaded(true);
+          setUploadFile(name);
+          setUploadFileKeyName(name.split('.')[0]);
+          await loadMidiTracks(name.split('.')[0]);
+        }  
       });
     }  
   }
@@ -412,7 +413,21 @@ function App({ signOut, user }) {
             <Flex direction="column" gap="1rem" alignItems="center">
               <Divider
                   orientation="horizontal" />
-              <Heading level={3}>Instrument Amp</Heading>
+              <Flex direction="column" alignItems="center">
+              <Heading level={3}>Instrument Amp</Heading>          
+                <Text
+                    variation="primary"
+                    as="p"
+                    color="DarkOrange"
+                    lineHeight="1.5em"
+                    fontWeight={600}
+                    fontSize="1em"
+                    fontStyle="normal"
+                    textDecoration="none"
+                  >
+                    Powered by Java - Amplified by AWS
+                </Text>
+              </Flex>
               <Divider
                   orientation="horizontal" />
               <Flex direction="row" alignItems="center">
@@ -508,7 +523,7 @@ function App({ signOut, user }) {
                       setIsStatusPolling(true);
                       let fileKeyName = 'recording-' + uuidv4();
                       setUploadFileKeyName(fileKeyName);
-                      await Storage.put('input/' + fileKeyName + '.wav', recordData.blob, {
+                      await Storage.put('input/recording/' + fileKeyName + '.wav', recordData.blob, {
                         metadata: { 'instrument-style': paramStyle, 'instrument-offset': instrumentOffset, 'instrument-range': instrumentRange },
                         level: 'private'
                       })
