@@ -275,7 +275,9 @@ function App({ signOut, user }) {
     })
     if (result.results
         .filter(item => (!item.key.startsWith('input/recording/') 
-          && (item.key.endsWith('.wav') || item.key.endsWith('.WAV')))).length > 0) { 
+          && (item.key.endsWith('.wav') || item.key.endsWith('.WAV')
+              || item.key.endsWith('.ogg') || item.key.endsWith('.OGG')
+              || item.key.endsWith('.mp3') || item.key.endsWith('.MP3')))).length > 0) { 
       result.results.forEach(async item => {  
         if (!item.key.startsWith('input/recording/')) {
           console.log('>>Audio file: ' + item.key);
