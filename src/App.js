@@ -663,14 +663,23 @@ function App({ signOut, user }) {
                 <Image
                   width="1800px"
                   alt="design"
-                  src="./instrumentSystemFlow.drawio.png"
+                  src="./InstrumentSystemFlow.drawio.png"
                 />
                 <Image
                   width="1800px"
                   alt="design"
                   src="./instrumentblocks.drawio.png"
                 />
-                
+                <Image
+                width="1800px"
+                alt="design"
+                src="./InstrumentComponents.drawio.png"
+                />
+                <Image
+                width="1800px"
+                alt="design"
+                src="./InstrumentNuCell.drawio.png"
+                />
               </Flex>
               <Flex direction="column" gap="2rem" alignItems="top" alignContent="flex-start">
                 <Heading level={4}>Screenshots</Heading>
