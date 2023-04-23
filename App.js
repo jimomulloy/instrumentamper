@@ -6,7 +6,7 @@ import '@aws-amplify/ui-react/styles.css';
 import MidiPlayer from 'react-midi-player';
 import ReactAudioPlayer from 'react-audio-player';
 import { v4 as uuidv4 } from 'uuid';
-//import 'html-midi-player';
+import 'html-midi-player';
 import LoadingOverlay from 'react-loading-overlay';
 import usePoll from 'react-use-poll';
 
@@ -15,7 +15,6 @@ let recorder = null;
 let audioContext = null;
  
 let isPolling = false; 
-let isLoaded = false; 
 
 function App({ signOut, user }) { 
   const [file, setFile] = useState();
@@ -65,12 +64,9 @@ function App({ signOut, user }) {
   }, []);
   
   useEffect(() => {
-    if (!isLoaded) {
-      console.log('Initial LOAD')    
-      loadAudioFile();
-      loadChat();
-      isLoaded = true;
-    }  
+    console.log('Initial LOAD')    
+    loadAudioFile();
+    loadChat();
   }, []);
 
   const validateInstrumentOffset = (e) => {
@@ -220,6 +216,7 @@ function App({ signOut, user }) {
       result.results.forEach(item => {
         loadMidiFile(item);
       })
+      console.log('>>midi loaded')
       setMidiTrackPending(false);
     }  
   }
@@ -283,7 +280,7 @@ function App({ signOut, user }) {
               || item.key.endsWith('.mp3') || item.key.endsWith('.MP3')))).length > 0) { 
       result.results.forEach(async item => {  
         if (!item.key.startsWith('input/recording/')) {
-          console.log('>>Audio  file: ' + item.key);
+          console.log('>>Audio file: ' + item.key);
           const result = await Storage.get(item.key, {
             level: 'private',
             download: true,
@@ -298,7 +295,6 @@ function App({ signOut, user }) {
           setUploaded(true);
           setUploadFile(name);
           setUploadFileKeyName(name.split('.')[0]);
-          setMidiItems([]);
           await loadMidiTracks(name.split('.')[0]);
         }  
       });
@@ -580,7 +576,7 @@ function App({ signOut, user }) {
                   ? <Text>Busy, please try again in a few seconds</Text>
                   : ""}   
                 <Flex>
-                  <Button isDisabled={!uploaded} onClick={async () => await loadMidiTracks(uploadFileKeyName)}>Load MIDI Tracks</Button>
+                  <Button isDisabled={!uploaded} onClick={() => loadMidiTracks(uploadFileKeyName)}>Load MIDI Tracks</Button>
                 </Flex>    
                 <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
                   {midiTrackPending
@@ -606,7 +602,15 @@ function App({ signOut, user }) {
                       </Link>
                     </Flex>
                     : ""}
-                  </Flex>   
+                  {midiItems.length > 0
+                  ? <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
+                      <Text>Master MIDI file</Text>
+                      <midi-player
+                        src={midiMasterFile}>
+                      </midi-player>
+                    </Flex>  
+                  : ""}    
+                </Flex>   
               </Flex>     
               <Divider
                 orientation="horizontal" />
