@@ -41,7 +41,7 @@ function App({ signOut, user }) {
   const [hasInstrumentOffsetError, setHasInstrumentOffsetError] = useState(false);
   const [hasInstrumentRangeError, setHasInstrumentRangeError] = useState(false);
   const [instrumentOffset, setInstrumentOffset] = useState("0");
-  const [instrumentRange, setInstrumentRange] = useState("30");
+  const [instrumentRange, setInstrumentRange] = useState("60");
   const [installerUrl, setInstallerUrl] = useState(null);
   const [state, setState] = useState({ status: 'READY' });
   const [width, setWidth] = useState(window.innerWidth);
@@ -376,7 +376,7 @@ function App({ signOut, user }) {
       const currentState = await readState();
       console.log('>>Polling currentState.status: ' + currentState.status);
       const timeNowMS = Date.now();
-      if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 30000) {
+      if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 60000) {
         isPolling = false;
         setIsStatusPolling(false);
       }  
