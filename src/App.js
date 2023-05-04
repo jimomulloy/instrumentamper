@@ -482,7 +482,7 @@ function App({ signOut, user }) {
                 {uploaded
                   ? <Text>Loaded {uploadFile}</Text>
                   : <Text>Upload Audio file or recording</Text>}  
-                {state.status !== 'READY' && (audioFileReady || audioRecordingReady)
+                {state.status !== 'READY' && (!state.time || (Date.now() - state.time) <= 60000) && (audioFileReady || audioRecordingReady)
                     ? <Text>Busy, please try again in a few seconds</Text>
                     : ""}   
                 <Flex direction="row" alignItems="center">
@@ -576,7 +576,7 @@ function App({ signOut, user }) {
                   orientation="horizontal" />
               <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
                 <Heading level={4}>Download Midi Output</Heading>
-                {state.status !== 'READY' && uploaded
+                {state.status !== 'READY' && (!state.time || (Date.now() - state.time) <= 60000) && uploaded
                   ? <Text>Busy, please try again in a few seconds</Text>
                   : ""}   
                 <Flex>
