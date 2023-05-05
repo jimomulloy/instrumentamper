@@ -500,6 +500,8 @@ function App({ signOut, user }) {
                     const timeNowMS = Date.now();
                     if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 60000) {
                       currentState.status = 'BUSY';
+                      currentState.code = '0';
+                      currentState.message = '';
                       currentState.time = timeNowMS;
                       await writeState(currentState);
                       console.log('>>state written: ' + currentState.status + ', ' + audioFileName);
@@ -526,6 +528,8 @@ function App({ signOut, user }) {
                     const timeNowMS = Date.now();
                     if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 60000) {
                       currentState.status = 'BUSY';
+                      currentState.code = '0';
+                      currentState.message = '';
                       currentState.time = timeNowMS;
                       await writeState(currentState);
                       isPolling = true;
