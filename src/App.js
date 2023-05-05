@@ -485,6 +485,9 @@ function App({ signOut, user }) {
                 {state.status !== 'READY' && (!state.time || (Date.now() - state.time) <= 60000) && (audioFileReady || audioRecordingReady)
                     ? <Text>Busy, please try again in a few seconds</Text>
                     : ""}   
+                {state.status == 'ERROR' && (audioFileReady || audioRecordingReady)
+                  ? <Text>Process Error: {state.code}</Text>
+                  : ""}         
                 <Flex direction="row" alignItems="center">
                   <Button isDisabled={!audioFileReady} onClick={async () => {
                     setMidiItems([]);
