@@ -376,7 +376,7 @@ function App({ signOut, user }) {
       const currentState = await readState();
       console.log('>>Polling currentState.status: ' + currentState.status);
       const timeNowMS = Date.now();
-      if (currentState.status === 'READY' || (!currentState.time) || (timeNowMS - currentState.time) > 60000) {
+      if (currentState.status === 'READY' || currentState.status === 'ERROR' || (!currentState.time) || (timeNowMS - currentState.time) > 60000) {
         isPolling = false;
         setIsStatusPolling(false);
       }  
@@ -578,7 +578,10 @@ function App({ signOut, user }) {
                 <Heading level={4}>Download Midi Output</Heading>
                 {state.status !== 'READY' && (!state.time || (Date.now() - state.time) <= 60000) && uploaded
                   ? <Text>Busy, please try again in a few seconds</Text>
-                  : ""}   
+                  : ""} 
+                {state.status == 'ERROR' && uploaded
+                  ? <Text>Process Error: {state.code}</Text>
+                  : ""}     
                 <Flex>
                   <Button isDisabled={!uploaded} onClick={async () => await loadMidiTracks(uploadFileKeyName)}>Load MIDI Tracks</Button>
                 </Flex>    
