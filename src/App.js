@@ -586,7 +586,7 @@ function App({ signOut, user }) {
                   ? <Text>Process Error: {state.code}</Text>
                   : ""}     
                 <Flex>
-                  <Button isDisabled={!uploaded} onClick={async () => await loadMidiTracks(uploadFileKeyName)}>Load MIDI Tracks</Button>
+                  <Button isDisabled={!uploaded || state.status == 'ERROR'} onClick={async () => await loadMidiTracks(uploadFileKeyName)}>Load MIDI Tracks</Button>
                 </Flex>    
                 <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
                   {midiTrackPending
