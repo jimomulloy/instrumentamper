@@ -277,30 +277,72 @@ function App({ signOut, user }) {
       type: 'audio/*'
     })
     if (result.results
-        .filter(item => (!item.key.startsWith('input/recording/') 
+        .filter(item => (item.key.startsWith('input/recording/') 
           && (item.key.endsWith('.wav') || item.key.endsWith('.WAV')
               || item.key.endsWith('.ogg') || item.key.endsWith('.OGG')
               || item.key.endsWith('.mp3') || item.key.endsWith('.MP3')))).length > 0) { 
       result.results.forEach(async item => {  
+        if (item.key.startsWith('input/recording/')) {
+          console.log('>>Audio recording  file: ' + item.key);
+          let result = null;
+          try {
+            result = await Storage.get(item.key, {
+              level: 'private',
+              download: true,
+              cacheControl: 'no-cache',
+            });
+            if (result) {
+              console.log(result);
+              const name = item.key.split('/')[2];
+              setRecordData({ blob: result.Body });
+              setAudioRecording(URL.createObjectURL(result.Body));
+              setAudioRecordingReady(true);
+              setUploaded(true);
+              setUploadFile(name);
+              setUploadFileKeyName(name.split('.')[0]);
+              setMidiItems([]);
+              await loadMidiTracks(name.split('.')[0]);
+            }  
+          } catch(err) {
+            console.log('>>loadAudioFile rec result error : ' + result);
+            console.log('>>loadAudioFile rec error : ' + err);
+          }   
+        }  
+      });
+    }  
+    if (result.results
+      .filter(item => (!item.key.startsWith('input/recording/') 
+        && (item.key.endsWith('.wav') || item.key.endsWith('.WAV')
+            || item.key.endsWith('.ogg') || item.key.endsWith('.OGG')
+            || item.key.endsWith('.mp3') || item.key.endsWith('.MP3')))).length > 0) { 
+      result.results.forEach(async item => {  
         if (!item.key.startsWith('input/recording/')) {
           console.log('>>Audio  file: ' + item.key);
-          const result = await Storage.get(item.key, {
-            level: 'private',
-            download: true,
-            cacheControl: 'no-cache',
-          });
-          console.log(result);
-          const name = item.key.split('/')[1];
-          setFile(result.Body); 
-          setAudioFileName(name); 
-          setAudioFile(URL.createObjectURL(result.Body)); 
-          setAudioFileReady(true);
-          setUploaded(true);
-          setUploadFile(name);
-          setUploadFileKeyName(name.split('.')[0]);
-          setMidiItems([]);
-          await loadMidiTracks(name.split('.')[0]);
-        }  
+          let result = null;
+          try {
+            result = await Storage.get(item.key, {
+              level: 'private',
+              download: true,
+              cacheControl: 'no-cache',
+            });
+            if (result) {
+              console.log(result);
+              const name = item.key.split('/')[1];
+              setFile(result.Body); 
+              setAudioFileName(name); 
+              setAudioFile(URL.createObjectURL(result.Body)); 
+              setAudioFileReady(true);
+              setUploaded(true);
+              setUploadFile(name);
+              setUploadFileKeyName(name.split('.')[0]);
+              setMidiItems([]);
+              await loadMidiTracks(name.split('.')[0]);
+            }  
+          } catch(err) {
+            console.log('>>loadAudioFile result error : ' + result);
+            console.log('>>loadAudioFile error : ' + err);
+          }     
+        }
       });
     }  
   }
@@ -342,7 +384,6 @@ function App({ signOut, user }) {
     console.log('>>state result : ' + result);
     console.log(result);
     try {
-      const url = URL.createObjectURL(result.Body)
       const value = await result.Body.text();
       console.log(value);
       const jsonResult = JSON.parse(value);
@@ -485,7 +526,7 @@ function App({ signOut, user }) {
                 {state.status !== 'READY' && (!state.time || (Date.now() - state.time) <= 60000) && (audioFileReady || audioRecordingReady)
                     ? <Text>Busy, please try again in a few seconds</Text>
                     : ""}   
-                {state.status == 'ERROR' && (audioFileReady || audioRecordingReady)
+                {state.status === 'ERROR' && (audioFileReady || audioRecordingReady)
                   ? <Text>Process Error: {state.code}</Text>
                   : ""}         
                 <Flex direction="row" alignItems="center">
@@ -586,11 +627,11 @@ function App({ signOut, user }) {
                 {state.status !== 'READY' && (!state.time || (Date.now() - state.time) <= 60000) && uploaded
                   ? <Text>Busy, please try again in a few seconds</Text>
                   : ""} 
-                {state.status == 'ERROR' && uploaded
+                {state.status === 'ERROR' && uploaded
                   ? <Text>Process Error: {state.code}</Text>
                   : ""}     
                 <Flex>
-                  <Button isDisabled={!uploaded || state.status == 'ERROR'} onClick={async () => await loadMidiTracks(uploadFileKeyName)}>Load MIDI Tracks</Button>
+                  <Button isDisabled={!uploaded || state.status === 'ERROR'} onClick={async () => await loadMidiTracks(uploadFileKeyName)}>Load MIDI Tracks</Button>
                 </Flex>    
                 <Flex direction="column" gap="1rem" alignItems="center" alignContent="center">
                   {midiTrackPending
