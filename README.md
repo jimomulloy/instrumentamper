@@ -1,10 +1,21 @@
 # Introduction
 
-The "instrumentamper" project is a compent of the "Instrument Amp" appc systen as deo on he gtouh WIKI page here. 
+
+The "Instrument Amp" is an extension of the [The Instrument Project](https://github.com/jimomulloy/instrument/wiki/The-Instrument) and aims to deliver some of that Audio processing functionality to internet users as a web application backed by services on the cloud.
+
+[instrumentamper](https://github.com/jimomulloy/instrumentamper) is an additional github project that aims to provide a client side web app. This is implemented as an AWS Amplify based React Javascript web browser application to deliver Authenticated access to the backend system. AWS Amplify services include a Cognito based User registration and access control sub system. 
+
+The AWS Amplify **Console** is used to configure a simple CI/CD process to trigger a build and deploy pipeline on Github project main branch commit.
+The AWS Amplify Console "Hosting" is also used to configure CloudFront CDN and Route53 internet domain registration and web content delivery.
+
+The web app interacts with an AWS S3 object store which in turn generates event that trigger actions on a Lambda function that makes calls into the **instrument** core library functions. Input and output Media files are persisted on the S3 store.
+
+(For more details on technical aspects of the server side implementation pPlease refer to the project [Instrument Project README](https://github.com/jimomulloy/instrument#readme).
+
+# AWS Amplify
 
 
-
-# Getting Started with Create React App
+# React App 
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
