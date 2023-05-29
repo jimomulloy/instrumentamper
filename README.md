@@ -1,3 +1,7 @@
+# Introduction
+
+The "instrumentamper" project is a compent of the "Instrument Amp" appc systen as deo on he gtouh WIKI page here. 
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
