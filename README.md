@@ -1,6 +1,5 @@
 # Introduction
 
-
 The "Instrument Amp" is an extension of the [The Instrument Project](https://github.com/jimomulloy/instrument/wiki/The-Instrument) and aims to deliver some of that Audio processing functionality to internet users as a web application backed by services on the cloud.
 
 [instrumentamper](https://github.com/jimomulloy/instrumentamper) is an additional github project that aims to provide a client side web app. This is implemented as an AWS Amplify based React Javascript web browser application to deliver Authenticated access to the backend system. AWS Amplify services include a Cognito based User registration and access control sub system. 
@@ -17,9 +16,9 @@ The web app interacts with an AWS S3 object store which in turn generates event 
 The project is built with the tools and framwork provided by [AWS Amplify](https://aws.amazon.com/amplify/?nc=sn&loc=0)
 
 This includes using:
-* Amplify "CLI" to initialise the Github project and create and push backend service infrastructure to the cloud.
-* Amplify UI to enhanced the React javasript client app UI.
-* Amplify Console to set up web hosting and a CD build and deploy pipeline, automiticall treigger on Github push to main branch.
+* Amplify **CLI** to initialise the Github project and create and push backend service infrastructure to the cloud.
+* Amplify **UI** to enhanced the React javasript client app UI.
+* Amplify **Console** to set up web hosting and a CD build and deploy pipeline, automiticall treigger on Github push to main branch.
 
 The project uses an EXISTING S3 Bucket that is already created by the instrument/instrument-aws/instrument-s3handler-cdk project module.
 
@@ -27,6 +26,7 @@ Therefore, rather than use the built in Amplify storage it is necessary to creat
 
 * https://dev.to/onlybakam/aws-amplify-how-to-interact-with-an-existing-s3-bucket-3mb1
 * https://docs.amplify.aws/cli/storage/import/
+
 
 # React App 
 
@@ -58,43 +58,3 @@ The build is minified and the filenames include the hashes.\
 Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
