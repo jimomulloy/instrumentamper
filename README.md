@@ -14,6 +14,19 @@ The web app interacts with an AWS S3 object store which in turn generates event 
 
 # AWS Amplify
 
+The project is built with the tools and framwork provided by [AWS Amplify](https://aws.amazon.com/amplify/?nc=sn&loc=0)
+
+This includes using:
+* Amplify "CLI" to initialise the Github project and create and push backend service infrastructure to the cloud.
+* Amplify UI to enhanced the React javasript client app UI.
+* Amplify Console to set up web hosting and a CD build and deploy pipeline, automiticall treigger on Github push to main branch.
+
+The project uses an EXISTING S3 Bucket that is already created by the instrument/instrument-aws/instrument-s3handler-cdk project module.
+
+Therefore, rather than use the built in Amplify storage it is necessary to create IAM roles and link the Amplify sub system to the external bucket as descrobed here:
+
+* https://dev.to/onlybakam/aws-amplify-how-to-interact-with-an-existing-s3-bucket-3mb1
+* https://docs.amplify.aws/cli/storage/import/
 
 # React App 
 
