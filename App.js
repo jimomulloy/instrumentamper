@@ -562,10 +562,17 @@ function App({ signOut, user }) {
                     onChange={(e) => setParamStyle(e.target.value)}
                   >
                     <option value="default">default</option>
+                    <option value="folk">folk</option>
                     <option value="vocal">vocal</option>
-                    <option value="guitar">guitar</option>
+                    <option value="vocal-male">vocal-male</option>
+                    <option value="vocal-female">vocal-female</option>
                     <option value="piano">piano</option>
+                    <option value="guitar">guitar</option>
+                    <option value="rock">rock</option>
+                    <option value="classical">classical</option>
                     <option value="ensemble">ensemble</option>
+                    <option value="birds">birds</option>
+                    <option value="blackbird">blackbird</option>
                   </SelectField>  
               </Flex>         
               <Divider
