@@ -53,7 +53,7 @@ function App({ signOut, user }) {
   
   function handleWindowSizeChange() {
     setWidth(window.innerWidth);
-    setIsMobile(window.innerWidth <= 768)
+    setIsMobile(window.innerWidth <= 1000); // 768)
   }
   
   useEffect(() => {
