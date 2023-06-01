@@ -9,7 +9,6 @@ import { v4 as uuidv4 } from 'uuid';
 //import 'html-midi-player';
 import LoadingOverlay from 'react-loading-overlay';
 import usePoll from 'react-use-poll';
-import {isMobile} from 'react-device-detect';
 
 let gumStream = null;
 let recorder = null;
@@ -46,7 +45,7 @@ function App({ signOut, user }) {
   const [installerUrl, setInstallerUrl] = useState(null);
   const [state, setState] = useState({ status: 'READY' });
   const [width, setWidth] = useState(window.innerWidth);
-  //const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [hasChatReply, setHasChatReply] = useState(false);
   const [chatReply, setChatReply] = useState(null);
   const [hasChatQuestion, setHasChatQuestion] = useState(false);
@@ -55,7 +54,7 @@ function App({ signOut, user }) {
   
   function handleWindowSizeChange() {
     setWidth(window.innerWidth);
-    //setIsMobile(window.innerWidth <= 1000); //768)
+    setIsMobile(window.innerWidth <= 1200); //768)
   }
   
   useEffect(() => {
