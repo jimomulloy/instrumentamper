@@ -620,9 +620,21 @@ function App({ signOut, user }) {
                     <option value="vocal-female">vocal-female</option>
                     <option value="piano">piano</option>
                     <option value="guitar">guitar</option>
+                    <option value="guitar-strum">guitar-strum</option>
                     <option value="rock">rock</option>
                     <option value="classical">classical</option>
                     <option value="ensemble">ensemble</option>
+                    <option value="beethoven">beethoven</option>
+                    <option value="brass">brass</option>
+                    <option value="compresschord">compresschord</option>
+                    <option value="epiano">epiano</option>
+                    <option value="epiano-arp">epiano-arp</option>
+                    <option value="epiano-chords">epiano-chords</option>
+                    <option value="epiano-chords-staccato">epiano-chords-staccato</option>
+                    <option value="hpschord">hpschord</option>
+                    <option value="neon">neon</option>
+                    <option value="neon-peaked">neon-peaked</option>
+                    <option value="hpschord">hpschord</option>
                     <option value="birds">birds</option>
                     <option value="blackbird">blackbird</option>
                   </SelectField>  
