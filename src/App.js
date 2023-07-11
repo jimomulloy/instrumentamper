@@ -62,7 +62,7 @@ function App({ signOut, user }) {
       return () => {
           window.removeEventListener('resize', handleWindowSizeChange);
       }
-  }, []);
+  });
   
   useEffect(() => {
     if (!isLoaded) {
