@@ -616,6 +616,7 @@ function App({ signOut, user }) {
                     <option value="default">default</option>
                     <option value="folk">folk</option>
                     <option value="vocal">vocal</option>
+                    <option value="vocal-folk">vocal-folk</option>
                     <option value="vocal-male">vocal-male</option>
                     <option value="vocal-female">vocal-female</option>
                     <option value="piano">piano</option>
