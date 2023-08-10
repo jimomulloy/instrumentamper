@@ -638,6 +638,7 @@ function App({ signOut, user }) {
                     <option value="hpschord">hpschord</option>
                     <option value="birds">birds</option>
                     <option value="blackbird">blackbird</option>
+                    <option value="abide">abide</option>
                   </SelectField>  
               </Flex>         
               <Divider
